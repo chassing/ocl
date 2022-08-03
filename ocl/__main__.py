@@ -43,7 +43,7 @@ def get_var(var_name, default=None):
             .stdout.decode("utf-8")
             .rstrip("\n")
         )
-    return os.getenv(var_name, default)
+    return os.getenv(f"OCL_{var_name}", default)
 
 
 def select_cluster(cluster_name: str = ""):
@@ -192,4 +192,4 @@ def typer_run():
 
 
 if __name__ == "__main__":
-    typer_run
+    typer_run()
