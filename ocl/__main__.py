@@ -6,6 +6,7 @@ from pathlib import Path
 
 import requests
 import typer
+from appdirs import AppDirs
 from iterfzf import iterfzf
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -32,6 +33,7 @@ CLUSTERS_QUERY = """
   }
 }
 """
+appdirs = AppDirs("ocl", "ca-net")
 
 
 def get_var(var_name, default=None):
@@ -169,9 +171,7 @@ def main(
         subprocess.run(["open", cluster["consoleUrl"]])
         sys.exit(0)
 
-    driver = setup_driver(
-        user_data_dir_path=Path.home() / ".openshift-login", debug=debug
-    )
+    driver = setup_driver(user_data_dir_path=Path(appdirs.user_cache_dir), debug=debug)
     try:
         oc_setup(cluster, driver)
     except subprocess.CalledProcessError:
