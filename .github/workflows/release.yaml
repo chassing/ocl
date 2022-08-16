@@ -39,7 +39,7 @@ jobs:
     name: Build PyPI packages
     needs: release_please
     if: ${{ needs.release_please.outputs.release_created }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
