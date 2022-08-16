@@ -76,6 +76,28 @@ OCL currently provides the following features (get help with `-h` or `--help`):
 [![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
 
+Use [Conventional Commit messages](https://www.conventionalcommits.org).
+The most important prefixes you should have in mind are:
+
+* `fix:` which represents bug fixes, and correlates to a [SemVer](https://semver.org/)
+  patch.
+* `feat:` which represents a new feature, and correlates to a SemVer minor.
+* `feat!:`,  or `fix!:`, `refactor!:`, etc., which represent a breaking change
+  (indicated by the `!`) and will result in a SemVer major.
+* `chore: release` to create a new release
+
+Consider using an empty commit:
+
+```
+git commit --allow-empty -m "chore: release"
+```
+
+When a commit to the main branch has `Release-As: x.x.x` (case insensitive) in the **commit body**, Release Please will open a new pull request for the specified version.
+```
+git commit --allow-empty -m "chore: release 2.0.0" -m "Release-As: 2.0.0"
+```
+
+
 [github-discussions-badge]: https://img.shields.io/static/v1?label=Discussions&message=Ask&color=blue&logo=github
 [github-discussions-link]:  https://github.com/chassing/ocl/discussions
 [pypi-link]:                https://pypi.org/project/openshift-cluster-login/
