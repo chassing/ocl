@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/chassing/ocl/compare/v0.1.0...v0.1.1) (2022-08-16)
+
+
+### Bug Fixes
+
+* **gh-action:** use latest ubuntu to build pypi packages ([6b5e4f4](https://github.com/chassing/ocl/commit/6b5e4f41372978cf154a0881f3a0ad200e806709))
+
 ## 0.1.0 (2022-08-16)
 
 
