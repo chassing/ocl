@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 
 import requests
@@ -70,7 +70,7 @@ def kubeconfig(cluster: ClusterV1) -> str:
 
 
 def run(
-    cmd: list[str] | str,
+    cmd: Union[list[str], str],
     shell: bool = False,
     check: bool = True,
     capture_output: bool = True,
