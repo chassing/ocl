@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/chassing/ocl/compare/v0.1.1...v0.1.2) (2022-08-16)
+
+
+### Bug Fixes
+
+* type hint style for python 3.9 ([7164e7e](https://github.com/chassing/ocl/commit/7164e7e67c931d2136136b1b0380f6e4c53b49a6))
+
 ## [0.1.1](https://github.com/chassing/ocl/compare/v0.1.0...v0.1.1) (2022-08-16)
 
 
