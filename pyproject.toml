@@ -1,9 +1,12 @@
 [tool.poetry]
-name = "ocl"
+name = "openshift-cluster-login"
 version = "0.1.0"
-description = "Openshift login on command line"
+description = "Openshift cluster login on command line"
 authors = ["Christian Assing <cassing@redhat.com>"]
 license = "MIT"
+readme = "README.md"
+repository = "http://github.com/chassing/ocl"
+packages = [{ include = "ocl" }]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"

@@ -17,6 +17,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webdriver import WebDriver
 
 from .cluster import query_string, ClusterQueryData, ClusterV1
 
@@ -95,7 +96,7 @@ def oc_whoami(cluster: ClusterV1) -> None:
     run(["oc", "whoami"], cluster=cluster)
 
 
-def setup_driver(user_data_dir_path: Path, debug: bool) -> webdriver.Chrome:
+def setup_driver(user_data_dir_path: Path, debug: bool) -> WebDriver:
     chrome_options = Options()
     if not debug:
         chrome_options.add_argument("--headless")
@@ -105,7 +106,7 @@ def setup_driver(user_data_dir_path: Path, debug: bool) -> webdriver.Chrome:
     return driver
 
 
-def github_login(driver: webdriver.Chrome) -> None:
+def github_login(driver: WebDriver) -> None:
     login_el = driver.find_element(By.ID, "login_field")
     login_el.send_keys(get_var("GITHUB_USERNAME"))
     pass_el = driver.find_element(By.ID, "password")
@@ -117,7 +118,7 @@ def github_login(driver: webdriver.Chrome) -> None:
     otp_el.send_keys(get_var("GITHUB_TOTP"))
 
 
-def oc_setup(cluster, driver: webdriver.Chrome) -> None:
+def oc_setup(cluster, driver: WebDriver) -> None:
     with Progress(
         SpinnerColumn(), TextColumn("[progress.description]{task.description}")
     ) as progress:

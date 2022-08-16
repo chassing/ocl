@@ -1,0 +1,58 @@
+name: Release and Package Application
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  # Update release PR
+  release_please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: google-github-actions/release-please-action@v3
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: python
+
+  pypi_build:
+    name: Build PyPI packages
+    needs: release_please
+    if: ${{ needs.release_please.outputs.release_created }}
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install poetry
+        run: pipx install poetry
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+          cache: "poetry"
+
+      # - name: Unittests
+      #   run: |
+      #     poetry env use "3.10"
+      #     poetry install --no-interaction
+      #     poetry run pytest tests
+
+      - name: Publish to PyPI
+        env:
+          POETRY_HTTP_BASIC_PYPI_USERNAME: __token__
+          POETRY_HTTP_BASIC_PYPI_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          poetry publish --build
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: pypi-packages
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
