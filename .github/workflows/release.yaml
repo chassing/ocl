@@ -3,7 +3,7 @@ name: Release and Package Application
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   # Update release PR
