@@ -1,8 +1,12 @@
+import copy
+import json
 import logging
 import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any, Optional
+
 
 import requests
 import typer
@@ -14,90 +18,84 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 
-CLUSTERS_QUERY = """
-{
-  clusters: clusters_v1 {
-    name
-    serverUrl
-    consoleUrl
-    auth {
-      service
-      ... on ClusterAuthGithubOrg_v1 {
-        org
-      }
-      ... on ClusterAuthGithubOrgTeam_v1 {
-        org
-        team
-      }
-    }
-  }
-}
-"""
+from .cluster import query_string, ClusterQueryData, ClusterV1
+
 appdirs = AppDirs("ocl", "ca-net")
 
 
-def get_var(var_name, default=None):
+def get_var(var_name: str, default: Any = None) -> str:
     if cmd := os.getenv(f"OCL_{var_name}_COMMAND"):
         return (
             run(cmd, shell=True, check=True, capture_output=True)
             .stdout.decode("utf-8")
             .rstrip("\n")
         )
-    return os.getenv(f"OCL_{var_name}", default)
+    if default:
+        return os.environ.get(f"OCL_{var_name}", default)
+    return os.environ[f"OCL_{var_name}"]
 
 
-def select_cluster(cluster_name: str = ""):
+def select_cluster(cluster_name: str = "") -> ClusterV1:
     clusters = clusters_from_app_interface()
-    clusters_dict = {c["name"]: c for c in clusters}
+    user_clusters = [ClusterV1(**c) for c in json.loads(get_var("USER_CLUSTERS"))]
+    clusters_dict = {c.name: c for c in clusters + user_clusters}
 
     if not cluster_name:
         cluster_name = iterfzf((cname for cname in sorted(clusters_dict.keys())))
+        if not cluster_name:
+            sys.exit(0)
     return clusters_dict[cluster_name]
 
 
-def clusters_from_app_interface():
+def clusters_from_app_interface() -> list[ClusterV1]:
     headers = {"Authorization": get_var("APP_INT_TOKEN")}
     res = requests.post(
         url=get_var("APP_INTERFACE_URL"),
-        json={"query": CLUSTERS_QUERY},
+        json={"query": query_string()},
         headers=headers,
     )
     res.raise_for_status()
-    clusters = res.json()["data"]["clusters"]
-    return [c for c in clusters if c.get("auth")]
+    clusters = ClusterQueryData(**res.json()["data"]).clusters or []
+    return [c for c in clusters if c.auth]
 
 
-def auth_url(console_url):
+def auth_url(console_url: str) -> str:
     apps_suffix = ".".join(console_url.split(".")[1:])
     return f"https://oauth-openshift.{apps_suffix}/oauth/authorize?client_id=openshift-browser-client&idp=github-app-sre&redirect_uri=https%3A%2F%2Foauth-openshift.{apps_suffix}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
 
 
-def kubeconfig(cluster):
-    return f"{Path.home()}/.kube/config_{cluster['name']}"
+def kubeconfig(cluster: ClusterV1) -> str:
+    return f"{Path.home()}/.kube/config_{cluster.name}"
 
 
-def run(cmd, shell=False, check=True, capture_output=True, cluster=None):
-    env = os.environ
+def run(
+    cmd: list[str] | str,
+    shell: bool = False,
+    check: bool = True,
+    capture_output: bool = True,
+    cluster: Optional[ClusterV1] = None,
+) -> subprocess.CompletedProcess:
+    env = copy.deepcopy(os.environ)
     if cluster:
         env["KUBECONFIG"] = kubeconfig(cluster)
-        env["OCL_CLUSTER_NAME"] = cluster["name"]
+        env["OCL_CLUSTER_NAME"] = cluster.name
     return subprocess.run(
         cmd, shell=shell, check=check, env=env, capture_output=capture_output
     )
 
 
-def oc_login(cluster, token):
+def oc_login(cluster: ClusterV1, token: str) -> None:
     run(
-        ["oc", "login", f"--token={token}", f'--server={cluster["serverUrl"]}'],
+        ["oc", "login", f"--token={token}", f"--server={cluster.server_url}"],
         cluster=cluster,
     )
 
 
-def oc_whoami(cluster):
+def oc_whoami(cluster: ClusterV1) -> None:
     run(["oc", "whoami"], cluster=cluster)
 
 
-def setup_driver(user_data_dir_path, debug):
+def setup_driver(user_data_dir_path: Path, debug: bool) -> webdriver.Chrome:
     chrome_options = Options()
     if not debug:
         chrome_options.add_argument("--headless")
@@ -107,7 +105,7 @@ def setup_driver(user_data_dir_path, debug):
     return driver
 
 
-def github_login(driver):
+def github_login(driver: webdriver.Chrome) -> None:
     login_el = driver.find_element(By.ID, "login_field")
     login_el.send_keys(get_var("GITHUB_USERNAME"))
     pass_el = driver.find_element(By.ID, "password")
@@ -119,7 +117,7 @@ def github_login(driver):
     otp_el.send_keys(get_var("GITHUB_TOTP"))
 
 
-def oc_setup(cluster, driver):
+def oc_setup(cluster, driver: webdriver.Chrome) -> None:
     with Progress(
         SpinnerColumn(), TextColumn("[progress.description]{task.description}")
     ) as progress:
@@ -168,7 +166,7 @@ def main(
 
     cluster = select_cluster(cluster_name)
     if open_in_browser:
-        subprocess.run(["open", cluster["consoleUrl"]])
+        subprocess.run(["open", cluster.console_url])
         sys.exit(0)
 
     driver = setup_driver(user_data_dir_path=Path(appdirs.user_cache_dir), debug=debug)
@@ -179,7 +177,7 @@ def main(
         sys.exit(1)
 
     print(
-        f"Spawn new shell for [bold green] {cluster['name']}[/] ({cluster['consoleUrl']}). Use exit or CTRL+d to leave it ..."
+        f"Spawn new shell for [bold green] {cluster.name}[/] ({cluster.console_url}). Use exit or CTRL+d to leave it ..."
     )
     run(os.environ["SHELL"], check=False, cluster=cluster, capture_output=False)
     print(

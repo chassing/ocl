@@ -121,6 +121,14 @@ pycodestyle = ">=2.9.0,<2.10.0"
 pyflakes = ">=2.5.0,<2.6.0"
 
 [[package]]
+name = "graphql-core"
+version = "3.2.1"
+description = "GraphQL implementation for Python, a port of GraphQL.js, the JavaScript reference implementation for GraphQL."
+category = "dev"
+optional = false
+python-versions = ">=3.6,<4"
+
+[[package]]
 name = "h11"
 version = "0.13.0"
 description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
@@ -206,6 +214,21 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
+name = "pydantic"
+version = "1.9.2"
+description = "Data validation and settings management using python type hints"
+category = "main"
+optional = false
+python-versions = ">=3.6.1"
+
+[package.dependencies]
+typing-extensions = ">=3.7.4.3"
+
+[package.extras]
+dotenv = ["python-dotenv (>=0.10.4)"]
+email = ["email-validator (>=1.0.3)"]
+
+[[package]]
 name = "pyflakes"
 version = "2.5.0"
 description = "passive checker of Python programs"
@@ -243,6 +266,18 @@ description = "A Python SOCKS client module. See https://github.com/Anorov/PySoc
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[[package]]
+name = "qenerate"
+version = "0.1.2"
+description = "Code Generator for GraphQL Query Data Classes"
+category = "dev"
+optional = false
+python-versions = ">=3.9,<4.0"
+
+[package.dependencies]
+graphql-core = ">=3.2,<4.0"
+requests = ">=2.22,<3.0"
 
 [[package]]
 name = "requests"
@@ -384,7 +419,7 @@ python-versions = "*"
 name = "typing-extensions"
 version = "4.3.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -422,7 +457,7 @@ h11 = ">=0.9.0,<1"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<4.0"
-content-hash = "01bb786938514f1897cb6cfdc25f6acf31aabfc51453973dafc85f8504ff444f"
+content-hash = "7dc0c463ee8ac2d8354e15b5e8d79d170e3c1fa1e75dfdc784e960d0bf34920c"
 
 [metadata.files]
 appdirs = [
@@ -445,6 +480,7 @@ commonmark = [
 ]
 cryptography = []
 flake8 = []
+graphql-core = []
 h11 = []
 idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
@@ -460,6 +496,7 @@ mypy-extensions = [
 outcome = []
 pycodestyle = []
 pycparser = []
+pydantic = []
 pyflakes = []
 pygments = [
     {file = "Pygments-2.12.0-py3-none-any.whl", hash = "sha256:dc9c10fb40944260f6ed4c688ece0cd2048414940f1cea51b8b226318411c519"},
@@ -467,6 +504,7 @@ pygments = [
 ]
 pyopenssl = []
 pysocks = []
+qenerate = []
 requests = []
 rich = []
 selenium = []
