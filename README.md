@@ -44,22 +44,15 @@ OCL currently provides the following features (get help with `-h` or `--help`):
 
 ## Enviroment Variables
 
-| Variable Name                 | Description                                                                                                                  | Default |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------- |
-| OCL_GITHUB_USERNAME           | Your GitHub username                                                                                                         |         |
-| OCL_GITHUB_USERNAME_COMMAND   | Command to retrieve your GitHub username                                                                                     |         |
-| OCL_GITHUB_PASSWORD           | Your GitHub password                                                                                                         |         |
-| OCL_GITHUB_PASSWORD_COMMAND   | Command to retrieve your GitHub password  (e.g. `op read op://Private/Github/password`)                                      |         |
-| OCL_GITHUB_TOTP               | Your GitHub two factor token                                                                                                 |         |
-| OCL_GITHUB_TOTP_COMMAND       | Command to retrieve your GitHub two factor token (e.g. `op item get Github --otp`)                                           |         |
-| OCL_WAIT                      | Selenium webdriver wait timeout                                                                                              | 2       |
-| OCL_WAIT_COMMAND              | Command to retrieve Selenium webdriver wait timeout                                                                          |         |
-| OCL_APP_INTERFACE_URL         | App-Interface URL                                                                                                            |         |
-| OCL_APP_INTERFACE_URL_COMMAND | Command to retrieve App-Interface URL                                                                                        |         |
-| OCL_APP_INT_TOKEN             | App-Interface authentication token                                                                                           |         |
-| OCL_APP_INT_TOKEN_COMMAND     | Command to retrieve App-Interface authentication token                                                                       |         |
-| USER_CLUSTERS                 | User defined clusters (e.g. `[{"name": "local-kind", "serverUrl": "https://localhost:6443", "consoleUrl": "not available}]`) |         |
-| USER_CLUSTERS_COMMAND         | Command to retrieve User defined clusters                                                                                    |         |
+| Variable Name                                       | Description                                                                                                                  | Required           | Default |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------- |
+| OCL_GITHUB_USERNAME OCL_GITHUB_USERNAME_COMMAND     | Your GitHub username                                                                                                         | :heavy_check_mark: |         |
+| OCL_GITHUB_PASSWORD OCL_GITHUB_PASSWORD_COMMAND     | Your GitHub password (e.g. command `op read op://Private/Github/password`)                                                   | :heavy_check_mark: |         |
+| OCL_GITHUB_TOTP OCL_GITHUB_TOTP_COMMAND             | Your GitHub two factor token (e.g. command `op item get Github --otp`)                                                       | :heavy_check_mark: |         |
+| OCL_WAIT OCL_WAIT_COMMAND                           | Selenium webdriver wait timeout                                                                                              |                    | 2       |
+| OCL_APP_INTERFACE_URL OCL_APP_INTERFACE_URL_COMMAND | App-Interface URL                                                                                                            | :heavy_check_mark: |         |
+| OCL_APP_INT_TOKEN OCL_APP_INT_TOKEN_COMMAND         | App-Interface authentication token                                                                                           | :heavy_check_mark: |         |
+| USER_CLUSTERS USER_CLUSTERS_COMMAND                 | User defined clusters (e.g. `[{"name": "local-kind", "serverUrl": "https://localhost:6443", "consoleUrl": "not available}]`) |                    |         |
 
 ## Limitations
 

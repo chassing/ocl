@@ -31,14 +31,16 @@ def get_var(var_name: str, default: Any = None) -> str:
             .stdout.decode("utf-8")
             .rstrip("\n")
         )
-    if default:
+    if default is not None:
         return os.environ.get(f"OCL_{var_name}", default)
     return os.environ[f"OCL_{var_name}"]
 
 
 def select_cluster(cluster_name: str = "") -> ClusterV1:
     clusters = clusters_from_app_interface()
-    user_clusters = [ClusterV1(**c) for c in json.loads(get_var("USER_CLUSTERS"))]
+    user_clusters = [
+        ClusterV1(**c) for c in json.loads(get_var("USER_CLUSTERS", default="[]"))
+    ]
     clusters_dict = {c.name: c for c in clusters + user_clusters}
 
     if not cluster_name:
