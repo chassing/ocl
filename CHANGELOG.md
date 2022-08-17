@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.3](https://github.com/chassing/ocl/compare/v0.1.2...v0.1.3) (2022-08-17)
+
+
+### Bug Fixes
+
+* make OCL_USER_CLUSTERS optional ([1504d55](https://github.com/chassing/ocl/commit/1504d55f8312af0e27644c119d986fb0f4b7d4aa))
+
+
+### Documentation
+
+* VAR vs VAR_COMMAND example ([ec6f0cd](https://github.com/chassing/ocl/commit/ec6f0cdbec99bc872baca76286c399bc0043836a))
+
 ## [0.1.2](https://github.com/chassing/ocl/compare/v0.1.1...v0.1.2) (2022-08-16)
 
 
