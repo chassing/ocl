@@ -44,16 +44,17 @@ OCL currently provides the following features (get help with `-h` or `--help`):
 
 ## Enviroment Variables
 
-| Variable Name                                       | Description                                                                                                                  | Required           | Default |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------- |
-| OCL_GITHUB_USERNAME OCL_GITHUB_USERNAME_COMMAND     | Your GitHub username                                                                                                         | :heavy_check_mark: |         |
-| OCL_GITHUB_PASSWORD OCL_GITHUB_PASSWORD_COMMAND     | Your GitHub password (e.g. command `op read op://Private/Github/password`)                                                   | :heavy_check_mark: |         |
-| OCL_GITHUB_TOTP OCL_GITHUB_TOTP_COMMAND             | Your GitHub two factor token (e.g. command `op item get Github --otp`)                                                       | :heavy_check_mark: |         |
-| OCL_WAIT OCL_WAIT_COMMAND                           | Selenium webdriver wait timeout                                                                                              |                    | 2       |
-| OCL_APP_INTERFACE_URL OCL_APP_INTERFACE_URL_COMMAND | App-Interface URL                                                                                                            | :heavy_check_mark: |         |
-| OCL_APP_INT_TOKEN OCL_APP_INT_TOKEN_COMMAND         | App-Interface authentication token                                                                                           | :heavy_check_mark: |         |
-| USER_CLUSTERS USER_CLUSTERS_COMMAND                 | User defined clusters (e.g. `[{"name": "local-kind", "serverUrl": "https://localhost:6443", "consoleUrl": "not available}]`) |                    |         |
+| Variable Name                                       | Description                                                                                                                                 | Required           | Default |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------- |
+| OCL_GITHUB_USERNAME OCL_GITHUB_USERNAME_COMMAND     | Your GitHub username                                                                                                                        | :heavy_check_mark: |         |
+| OCL_GITHUB_PASSWORD OCL_GITHUB_PASSWORD_COMMAND     | Your GitHub password (e.g. command `op read op://Private/Github/password`)                                                                  | :heavy_check_mark: |         |
+| OCL_GITHUB_TOTP OCL_GITHUB_TOTP_COMMAND             | Your GitHub two factor token (e.g. command `op item get Github --otp`)                                                                      | :heavy_check_mark: |         |
+| OCL_WAIT OCL_WAIT_COMMAND                           | Selenium webdriver wait timeout                                                                                                             |                    | 2       |
+| OCL_APP_INTERFACE_URL OCL_APP_INTERFACE_URL_COMMAND | App-Interface URL                                                                                                                           | :heavy_check_mark: |         |
+| OCL_APP_INT_TOKEN OCL_APP_INT_TOKEN_COMMAND         | App-Interface authentication token                                                                                                          | :heavy_check_mark: |         |
+| USER_CLUSTERS USER_CLUSTERS_COMMAND                 | User defined clusters as json format (e.g. `[{"name": "local-kind", "serverUrl": "https://localhost:6443", "consoleUrl": "not available}]`) |                    | "[]"    |
 
+You can either set a variable, e.g. `export OCL_GITHUB_USERNAME="mail@example.com"` or retrieve it via a command, e.g. `export OCL_GITHUB_USERNAME_COMMAND="op read op://Private/Github/username"`
 ## Limitations
 
 * MacOS only
