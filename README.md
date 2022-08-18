@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/openshift-cluster-login)][pypi-link]
 [![PyPI platforms][pypi-platforms]][pypi-link]
 ![PyPI - License](https://img.shields.io/pypi/l/openshift-cluster-login)
+[![Release and Package Application](https://github.com/chassing/ocl/actions/workflows/release.yaml/badge.svg)](https://github.com/chassing/ocl/actions/workflows/release.yaml)
 
 OCL does an automatic login to an OpenShift cluster. It fetches cluster information from app-interface and performs a login via [Selenium](https://selenium-python.readthedocs.io).
 
@@ -36,13 +37,13 @@ $ ocl
 OCL currently provides the following features (get help with `-h` or `--help`):
 
 - OpenShift console login (oc login) via GitHub authentication
-- Get cluster information from app-interface or user defined (`OCL_USER_CLUSTERS`)
+- Get cluster information from app-interface or user-defined (`OCL_USER_CLUSTERS``)
 - Open OpenShift console in browser (`--open-in-browser`)
 - Shell completion (`--install-completion`, `--show-completion`)
 - Credentials via environment variables or shell command (e.g. [1password CLI](https://developer.1password.com/docs/cli/))
 
 
-## Enviroment Variables
+## Environment Variables
 
 | Variable Name                                       | Description                                                                                                                                 | Required           | Default |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------- |
