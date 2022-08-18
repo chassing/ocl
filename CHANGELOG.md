@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.4](https://github.com/chassing/ocl/compare/v0.1.3...v0.1.4) (2022-08-18)
+
+
+### Bug Fixes
+
+* typo in oc_setup method ([796b3f7](https://github.com/chassing/ocl/commit/796b3f7e3887ebdf65580ac7c629fc405cabd67a))
+
+
+### Documentation
+
+* fix typos and workflow badge ([a8dd85e](https://github.com/chassing/ocl/commit/a8dd85e02f6486cb9d93cfe05fb28c99d958d1de))
+
 ## [0.1.3](https://github.com/chassing/ocl/compare/v0.1.2...v0.1.3) (2022-08-17)
 
 
