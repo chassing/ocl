@@ -120,7 +120,7 @@ def github_login(driver: WebDriver) -> None:
     otp_el.send_keys(get_var("GITHUB_TOTP"))
 
 
-def oc_setup(cluster, driver: WebDriver) -> None:
+def oc_setup(cluster: ClusterV1, driver: WebDriver) -> None:
     with Progress(
         SpinnerColumn(), TextColumn("[progress.description]{task.description}")
     ) as progress:
@@ -134,7 +134,7 @@ def oc_setup(cluster, driver: WebDriver) -> None:
 
             try:
                 task = progress.add_task(description="Retrieving token ...", total=1)
-                driver.get(auth_url(cluster["consoleUrl"]))
+                driver.get(auth_url(cluster.console_url))
 
                 if driver.current_url.startswith("https://github.com/login?"):
                     subtask = progress.add_task(
