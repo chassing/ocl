@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/chassing/ocl/compare/v0.1.4...v0.1.5) (2022-08-29)
+
+
+### Bug Fixes
+
+* **github:** handle github authorize page ([96a06c5](https://github.com/chassing/ocl/commit/96a06c5db033bd6c1eac87752747281f13c37133))
+
 ## [0.1.4](https://github.com/chassing/ocl/compare/v0.1.3...v0.1.4) (2022-08-18)
 
 
