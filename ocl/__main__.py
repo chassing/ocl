@@ -4,9 +4,9 @@ import logging
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any, Optional, Union
-
 
 import requests
 import typer
@@ -19,7 +19,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
-from .cluster import query_string, ClusterQueryData, ClusterV1
+from .cluster import ClusterQueryData, ClusterV1, query_string
 
 appdirs = AppDirs("ocl", "ca-net")
 
@@ -142,6 +142,16 @@ def oc_setup(cluster: ClusterV1, driver: WebDriver) -> None:
                     )
                     github_login(driver=driver)
                     progress.remove_task(subtask)
+                    if driver.current_url.startswith(
+                        "https://github.com/login/oauth/authorize?"
+                    ):
+                        # grant access
+                        subtask = progress.add_task(
+                            description="GitHub  authorize app-sre ...", total=1
+                        )
+                        time.sleep(4)
+                        driver.find_element(By.ID, "js-oauth-authorize-btn").click()
+                        progress.remove_task(subtask)
 
                 # Clicking the "Display Token" button
                 driver.find_element(By.CSS_SELECTOR, "button").click()
