@@ -94,6 +94,10 @@ def oc_login(cluster: ClusterV1, token: str) -> None:
     )
 
 
+def oc_project(cluster: ClusterV1, project: str) -> None:
+    run(["oc", "project", project], cluster=cluster)
+
+
 def oc_whoami(cluster: ClusterV1) -> None:
     run(["oc", "whoami"], cluster=cluster)
 
@@ -170,6 +174,7 @@ def oc_setup(cluster: ClusterV1, driver: WebDriver) -> None:
 
 def main(
     cluster_name: str = typer.Argument(None, help="Cluster name"),
+    project: str = typer.Argument(None, help="Namespace/Project"),
     debug: bool = False,
     open_in_browser: bool = False,
 ):
@@ -185,12 +190,21 @@ def main(
     driver = setup_driver(user_data_dir_path=Path(appdirs.user_cache_dir), debug=debug)
     try:
         oc_setup(cluster, driver)
-    except subprocess.CalledProcessError:
-        print("[bold red] something went wrong[/]")
+    except subprocess.CalledProcessError as e:
+        print(f"[bold red]'oc login' failed![/]\nException: {e}")
         sys.exit(1)
 
+    if project:
+        try:
+            oc_project(cluster=cluster, project=project)
+        except subprocess.CalledProcessError:
+            print(
+                f"[bold red]Entering {project} failed! Maybe this project doesn't exist or you don't have proper permissions.[/]"
+            )
+            project = ""
+
     print(
-        f"Spawn new shell for [bold green] {cluster.name}[/] ({cluster.console_url}). Use exit or CTRL+d to leave it ..."
+        f"Spawn new shell for [bold green] {cluster.name}[/]{f'[bold yellow]/{project}[/]' if project else ''} ({cluster.console_url}). Use exit or CTRL+d to leave it ..."
     )
     run(os.environ["SHELL"], check=False, cluster=cluster, capture_output=False)
     print(
