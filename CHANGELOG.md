@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/chassing/ocl/compare/v0.1.5...v0.2.0) (2022-08-30)
+
+
+### Features
+
+* **openshift:** enter project via CLI argument ([ed61a21](https://github.com/chassing/ocl/commit/ed61a2151062de03fae1fa7203666e14e68510d3))
+
 ## [0.1.5](https://github.com/chassing/ocl/compare/v0.1.4...v0.1.5) (2022-08-29)
 
 
