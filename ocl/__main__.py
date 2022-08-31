@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional, Tuple, Union
 
 import requests
 import typer
@@ -14,6 +14,7 @@ from appdirs import AppDirs
 from iterfzf import iterfzf
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.text import Text
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -22,6 +23,27 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from .cluster import ClusterQueryData, ClusterV1, query_string
 
 appdirs = AppDirs("ocl", "ca-net")
+
+BANNER = """
+            ';cloooolc;'            ';clloooolc;'        ':lll:'
+          ;d0NWMMMMMMWN0d;        ;d0NWMMMMMMMWN0d;      oNMMMXc
+         cKMMMMMMMMMMMMMMKl      cKWMMMMMMMMMMMMMWKl     oNMMMXl
+        ;0MMMMXkllloONMMMMXc    ;0MMMMX0klclokNMMMMXc    oNMMMNl
+        dWMMMNo      dNMMMWx'   oNMMMNo'      oNMMMWx'   oWMMMNl
+       'kMMMM0;      ;KMMMMO,  'kMMMM0;       'ldddd:    dWMMMNl
+       ,OMMMMO,      ,0MMMM0;  ,OMMMMO,                  dWMMMXc
+       ;0MMMMO,      ,OMMMM0;  ;0MMMMO,                  dWMMMK:
+       ,0MMMMk'      ,0MMMM0;  ,OMMMMO,                  dWMMMXc
+       ,OMMMMO,      ;0MMMM0;  ,OMMMMO,        ';;;;'    dWMMMXc
+       'kMMMMK;      :KMMMMO,  'xWMMMK:       ;ONNNNx'   dWMMMK:
+        oNMMMNx'    ,kWMMMWx    lNMMMWx:,    ,kWMMMWx'   dWMMMKc
+        ,OWMMMWKkxxOKWMMMW0:    ,kWMMMWNKkxxOKWMMMW0:    dWMMMWX000000o'
+         ;kWMMMMMMMMMMMMWk;      ;kNMMMMMMMMMMMMMNO;     xWMMMMMMMMMMMO,
+          'cx0XNNWWWNX0xc'        'cx0XNNNNWWNX0xc'      oKXKKKXXKKKKKd'
+             ;cloooolc;              ;clloooolc;         oKXKKKXXKKKKKd'
+"""
+
+app = typer.Typer(rich_markup_mode="rich")
 
 
 def get_var(var_name: str, default: Any = None) -> str:
@@ -172,15 +194,37 @@ def oc_setup(cluster: ClusterV1, driver: WebDriver) -> None:
             progress.remove_task(task)
 
 
+def blend_text(
+    message: str, color1: Tuple[int, int, int], color2: Tuple[int, int, int]
+) -> Text:
+    """Blend text from one color to another."""
+    text = Text(message)
+    r1, g1, b1 = color1
+    r2, g2, b2 = color2
+    dr = r2 - r1
+    dg = g2 - g1
+    db = b2 - b1
+    size = len(text)
+    for index in range(size):
+        blend = index / size
+        color = f"#{int(r1 + dr * blend):2X}{int(g1 + dg * blend):2X}{int(b1 + db * blend):2X}"
+        text.stylize(color, index, index + 1)
+    return text
+
+
+@app.command(epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
 def main(
     cluster_name: str = typer.Argument(None, help="Cluster name"),
     project: str = typer.Argument(None, help="Namespace/Project"),
     debug: bool = False,
     open_in_browser: bool = False,
+    display_banner: bool = True,
 ):
     logging.basicConfig(
         level=logging.INFO if not debug else logging.DEBUG, format="%(message)s"
     )
+    if display_banner:
+        print(blend_text(BANNER, (32, 32, 255), (255, 32, 255)))
 
     cluster = select_cluster(cluster_name)
     if open_in_browser:
@@ -214,9 +258,5 @@ def main(
     )
 
 
-def typer_run():
-    typer.run(main)
-
-
 if __name__ == "__main__":
-    typer_run()
+    app()
