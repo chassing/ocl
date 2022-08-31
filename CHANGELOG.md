@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/chassing/ocl/compare/v0.2.0...v0.3.0) (2022-08-31)
+
+
+### Features
+
+* **openshift:** open in browser will enter project if given ([131828a](https://github.com/chassing/ocl/commit/131828a71bc890156efdb0c8cfe69a5704b75c62))
+
+
+### Documentation
+
+* add logo ([c0ac785](https://github.com/chassing/ocl/commit/c0ac78527b1849598710f035e981bdeed01027a6))
+
 ## [0.2.0](https://github.com/chassing/ocl/compare/v0.1.5...v0.2.0) (2022-08-30)
 
 
