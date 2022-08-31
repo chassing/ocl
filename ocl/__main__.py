@@ -184,6 +184,8 @@ def main(
 
     cluster = select_cluster(cluster_name)
     if open_in_browser:
+        if project:
+            cluster.console_url += f"/k8s/cluster/projects/{project}"
         subprocess.run(["open", cluster.console_url])
         sys.exit(0)
 
