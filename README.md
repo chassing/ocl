@@ -1,3 +1,4 @@
+![logo](images/logo.png)
 # OCL (OpenShift Login)
 
 [![PyPI](https://img.shields.io/pypi/v/openshift-cluster-login)][pypi-link]
