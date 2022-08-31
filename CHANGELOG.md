@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/chassing/ocl/compare/v0.3.0...v0.3.1) (2022-08-31)
+
+
+### Documentation
+
+* update logo ([e866a64](https://github.com/chassing/ocl/commit/e866a64cd0d9f8afdcce7af1eb3fb8c653f291de))
+
 ## [0.3.0](https://github.com/chassing/ocl/compare/v0.2.0...v0.3.0) (2022-08-31)
 
 
