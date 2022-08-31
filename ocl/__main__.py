@@ -227,10 +227,13 @@ def main(
         print(blend_text(BANNER, (32, 32, 255), (255, 32, 255)))
 
     cluster = select_cluster(cluster_name)
+    browser_url = cluster.console_url
+
+    if project:
+        browser_url += f"/k8s/cluster/projects/{project}"
+
     if open_in_browser:
-        if project:
-            cluster.console_url += f"/k8s/cluster/projects/{project}"
-        subprocess.run(["open", cluster.console_url])
+        subprocess.run(["open", browser_url])
         sys.exit(0)
 
     driver = setup_driver(user_data_dir_path=Path(appdirs.user_cache_dir), debug=debug)
@@ -250,7 +253,11 @@ def main(
             project = ""
 
     print(
-        f"Spawn new shell for [bold green] {cluster.name}[/]{f'[bold yellow]/{project}[/]' if project else ''} ({cluster.console_url}). Use exit or CTRL+d to leave it ..."
+        f"""Spawn new shell, use exit or CTRL+d to leave it!
+
+    URL: {browser_url}
+    Cluster: [bold green] {cluster.name}[/]
+    {f'Project: [bold yellow]☸ {project}[/]' if project else ''}"""
     )
     run(os.environ["SHELL"], check=False, cluster=cluster, capture_output=False)
     print(
