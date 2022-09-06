@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/chassing/ocl/compare/v0.4.0...v0.4.1) (2022-09-06)
+
+
+### Bug Fixes
+
+* **openshift:** display url for open-in-browser ([543eff5](https://github.com/chassing/ocl/commit/543eff558713420056c38caa8cc92579976ed84f))
+
 ## [0.4.0](https://github.com/chassing/ocl/compare/v0.3.1...v0.4.0) (2022-09-06)
 
 
