@@ -216,7 +216,7 @@ def blend_text(
 def bye():
     print(
         "Thank you for using openshift-login. :man_bowing: Have a great day ahead! :red_heart-emoji:"
-    )e
+    )
 
 
 @app.command(epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
