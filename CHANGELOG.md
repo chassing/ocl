@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/chassing/ocl/compare/v0.3.1...v0.4.0) (2022-09-06)
+
+
+### Features
+
+* **doc:** document shell env vars ([341ffae](https://github.com/chassing/ocl/commit/341ffae74933f8e016b4786c7d20e2d53ff5dc29))
+* **shell:** set OCL_CLUSTER_CONSOLE with console url ([2f617ca](https://github.com/chassing/ocl/commit/2f617ca90b99af2467f65f7b2d9fe0aaff4737d6))
+
 ## [0.3.1](https://github.com/chassing/ocl/compare/v0.3.0...v0.3.1) (2022-08-31)
 
 
