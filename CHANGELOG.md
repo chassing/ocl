@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/chassing/ocl/compare/v0.4.1...v0.4.2) (2022-09-06)
+
+
+### Bug Fixes
+
+* **chore:** typo ([2233251](https://github.com/chassing/ocl/commit/2233251436768537e504837eec786204bbd02319))
+
 ## [0.4.1](https://github.com/chassing/ocl/compare/v0.4.0...v0.4.1) (2022-09-06)
 
 
