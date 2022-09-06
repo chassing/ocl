@@ -104,6 +104,7 @@ def run(
     if cluster:
         env["KUBECONFIG"] = kubeconfig(cluster)
         env["OCL_CLUSTER_NAME"] = cluster.name
+        env["OCL_CLUSTER_CONSOLE"] = cluster.console_url
     return subprocess.run(
         cmd, shell=shell, check=check, env=env, capture_output=capture_output
     )
