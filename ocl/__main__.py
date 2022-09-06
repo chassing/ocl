@@ -213,6 +213,12 @@ def blend_text(
     return text
 
 
+def bye():
+    print(
+        "Thank you for using openshift-login. :man_bowing: Have a great day ahead! :red_heart-emoji:"
+    )e
+
+
 @app.command(epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
 def main(
     cluster_name: str = typer.Argument(None, help="Cluster name"),
@@ -234,7 +240,9 @@ def main(
         browser_url += f"/k8s/cluster/projects/{project}"
 
     if open_in_browser:
+        print(f"[bold green]Opening [/] {browser_url}")
         subprocess.run(["open", browser_url])
+        bye()
         sys.exit(0)
 
     driver = setup_driver(user_data_dir_path=Path(appdirs.user_cache_dir), debug=debug)
@@ -261,9 +269,7 @@ def main(
     {f'Project: [bold yellow]☸ {project}[/]' if project else ''}"""
     )
     run(os.environ["SHELL"], check=False, cluster=cluster, capture_output=False)
-    print(
-        "Thank you for using openshift-login. :man_bowing: Have a great day ahead! :red_heart-emoji:"
-    )
+    bye()
 
 
 if __name__ == "__main__":
