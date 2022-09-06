@@ -33,6 +33,12 @@ $ pipx run openshift-cluster-login
 ```shell
 $ ocl
 ```
+This spawns a new shell with the following environment variables are set:
+
+* `KUBECONFIG` - path to kubeconfig file
+* `OCL_CLUSTER_NAME` - cluster name
+* `OCL_CLUSTER_CONSOLE` - url to cluster console
+
 ## Features
 
 OCL currently provides the following features (get help with `-h` or `--help`):
@@ -57,6 +63,8 @@ OCL currently provides the following features (get help with `-h` or `--help`):
 | USER_CLUSTERS USER_CLUSTERS_COMMAND                 | User defined clusters as json format (e.g. `[{"name": "local-kind", "serverUrl": "https://localhost:6443", "consoleUrl": "not available}]`) |                    | "[]"    |
 
 You can either set a variable, e.g. `export OCL_GITHUB_USERNAME="mail@example.com"` or retrieve it via a command, e.g. `export OCL_GITHUB_USERNAME_COMMAND="op read op://Private/Github/username"`
+
+
 ## Limitations
 
 * MacOS only
