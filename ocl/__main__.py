@@ -2,8 +2,10 @@ import copy
 import json
 import logging
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Optional, Tuple, Union
@@ -89,8 +91,13 @@ def auth_url(console_url: str) -> str:
     return f"https://oauth-openshift.{apps_suffix}/oauth/authorize?client_id=openshift-browser-client&idp=github-app-sre&redirect_uri=https%3A%2F%2Foauth-openshift.{apps_suffix}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
 
 
-def kubeconfig(cluster: ClusterV1) -> str:
-    return f"{Path.home()}/.kube/config_{cluster.name}"
+def kubeconfig(cluster: ClusterV1, temp_kube_config: bool) -> str:
+    kc = f"{Path.home()}/.kube/config_{cluster.name}"
+    if temp_kube_config:
+        _, temp_file = tempfile.mkstemp(prefix=f"ocl.{cluster.name}.")
+        shutil.copyfile(kc, temp_file)
+        return temp_file
+    return kc
 
 
 def run(
@@ -99,10 +106,11 @@ def run(
     check: bool = True,
     capture_output: bool = True,
     cluster: Optional[ClusterV1] = None,
+    temp_kube_config: bool = False,
 ) -> subprocess.CompletedProcess:
     env = copy.deepcopy(os.environ)
     if cluster:
-        env["KUBECONFIG"] = kubeconfig(cluster)
+        env["KUBECONFIG"] = kubeconfig(cluster, temp_kube_config=temp_kube_config)
         env["OCL_CLUSTER_NAME"] = cluster.name
         env["OCL_CLUSTER_CONSOLE"] = cluster.console_url
     return subprocess.run(
@@ -268,7 +276,13 @@ def main(
     Cluster: [bold green] {cluster.name}[/]
     {f'Project: [bold yellow]☸ {project}[/]' if project else ''}"""
     )
-    run(os.environ["SHELL"], check=False, cluster=cluster, capture_output=False)
+    run(
+        os.environ["SHELL"],
+        check=False,
+        cluster=cluster,
+        capture_output=False,
+        temp_kube_config=True,
+    )
     bye()
 
 
