@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/chassing/ocl/compare/v0.4.2...v0.5.0) (2022-09-16)
+
+
+### Features
+
+* use temp KUBECONFIG file for each new ocl shell ([b58b411](https://github.com/chassing/ocl/commit/b58b41198c22d512bb72b6f71059b838d2efa6e5))
+
 ## [0.4.2](https://github.com/chassing/ocl/compare/v0.4.1...v0.4.2) (2022-09-06)
 
 
