@@ -129,8 +129,8 @@ def oc_project(cluster: ClusterV1, project: str) -> None:
     run(["oc", "project", project], cluster=cluster)
 
 
-def oc_whoami(cluster: ClusterV1) -> None:
-    run(["oc", "whoami"], cluster=cluster)
+def oc_check_login(cluster: ClusterV1) -> None:
+    run(["oc", "cluster-info"], cluster=cluster)
 
 
 def setup_driver(user_data_dir_path: Path, debug: bool) -> WebDriver:
@@ -161,7 +161,7 @@ def oc_setup(cluster: ClusterV1, driver: WebDriver) -> None:
     ) as progress:
         task = progress.add_task(description="Testing already logged in ..", total=1)
         try:
-            oc_whoami(cluster)
+            oc_check_login(cluster)
             progress.remove_task(task)
         except subprocess.CalledProcessError:
             # not logged in
