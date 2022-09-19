@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/chassing/ocl/compare/v0.5.0...v0.5.1) (2022-09-19)
+
+
+### Bug Fixes
+
+* **k8s:** use cluster-info instead whoami to check access ([edfa679](https://github.com/chassing/ocl/commit/edfa67956a4c3ce96716cffbbe77908cd8d974c1))
+
 ## [0.5.0](https://github.com/chassing/ocl/compare/v0.4.2...v0.5.0) (2022-09-16)
 
 
