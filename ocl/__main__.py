@@ -13,6 +13,7 @@ from typing import Any, Optional, Tuple, Union
 import requests
 import typer
 from appdirs import AppDirs
+from flufl.lock import Lock
 from iterfzf import iterfzf
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -25,6 +26,8 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from .cluster import ClusterQueryData, ClusterV1, query_string
 
 appdirs = AppDirs("ocl", "ca-net")
+lock_file_name = Path(tempfile.gettempdir()) / "ocl.lock"
+lock = Lock(str(lock_file_name), lifetime=60, default_timeout=65)
 
 BANNER = """
             ';cloooolc;'            ';clloooolc;'        ':lll:'
@@ -155,52 +158,68 @@ def github_login(driver: WebDriver) -> None:
     otp_el.send_keys(get_var("GITHUB_TOTP"))
 
 
-def oc_setup(cluster: ClusterV1, driver: WebDriver) -> None:
+def oc_setup(cluster: ClusterV1, debug: bool) -> None:
     with Progress(
         SpinnerColumn(), TextColumn("[progress.description]{task.description}")
     ) as progress:
-        task = progress.add_task(description="Testing already logged in ..", total=1)
-        try:
-            oc_check_login(cluster)
-            progress.remove_task(task)
-        except subprocess.CalledProcessError:
-            # not logged in
+        task = progress.add_task(description="Acquiring lock ...", total=1)
+        with lock:
             progress.remove_task(task)
 
+            task = progress.add_task(
+                description="Testing already logged in ..", total=1
+            )
             try:
-                task = progress.add_task(description="Retrieving token ...", total=1)
-                driver.get(auth_url(cluster.console_url))
-
-                if driver.current_url.startswith("https://github.com/login?"):
-                    subtask = progress.add_task(
-                        description="GitHub  login ...", total=1
-                    )
-                    github_login(driver=driver)
-                    progress.remove_task(subtask)
-                    if driver.current_url.startswith(
-                        "https://github.com/login/oauth/authorize?"
-                    ):
-                        # grant access
-                        subtask = progress.add_task(
-                            description="GitHub  authorize app-sre ...", total=1
-                        )
-                        time.sleep(4)
-                        driver.find_element(By.ID, "js-oauth-authorize-btn").click()
-                        progress.remove_task(subtask)
-
-                # Clicking the "Display Token" button
-                driver.find_element(By.CSS_SELECTOR, "button").click()
-                # Getting the auth token
-                token = driver.find_element(By.CSS_SELECTOR, "code").text
+                oc_check_login(cluster)
                 progress.remove_task(task)
-            finally:
-                for handle in driver.window_handles:
-                    driver.switch_to.window(handle)
-                    driver.close()
+            except subprocess.CalledProcessError:
+                # not logged in
+                progress.remove_task(task)
 
-            task = progress.add_task(description="CLI login ...", total=1)
-            oc_login(cluster=cluster, token=token)
-            progress.remove_task(task)
+                task = progress.add_task(
+                    description="Opening browser headless ...", total=1
+                )
+                driver = setup_driver(
+                    user_data_dir_path=Path(appdirs.user_cache_dir), debug=debug
+                )
+                progress.remove_task(task)
+
+                try:
+                    task = progress.add_task(
+                        description="Retrieving token ...", total=1
+                    )
+                    driver.get(auth_url(cluster.console_url))
+
+                    if driver.current_url.startswith("https://github.com/login?"):
+                        subtask = progress.add_task(
+                            description="GitHub  login ...", total=1
+                        )
+                        github_login(driver=driver)
+                        progress.remove_task(subtask)
+                        if driver.current_url.startswith(
+                            "https://github.com/login/oauth/authorize?"
+                        ):
+                            # grant access
+                            subtask = progress.add_task(
+                                description="GitHub  authorize app-sre ...", total=1
+                            )
+                            time.sleep(4)
+                            driver.find_element(By.ID, "js-oauth-authorize-btn").click()
+                            progress.remove_task(subtask)
+
+                    # Clicking the "Display Token" button
+                    driver.find_element(By.CSS_SELECTOR, "button").click()
+                    # Getting the auth token
+                    token = driver.find_element(By.CSS_SELECTOR, "code").text
+                    progress.remove_task(task)
+                finally:
+                    for handle in driver.window_handles:
+                        driver.switch_to.window(handle)
+                        driver.close()
+
+                task = progress.add_task(description="CLI login ...", total=1)
+                oc_login(cluster=cluster, token=token)
+                progress.remove_task(task)
 
 
 def blend_text(
@@ -253,9 +272,8 @@ def main(
         bye()
         sys.exit(0)
 
-    driver = setup_driver(user_data_dir_path=Path(appdirs.user_cache_dir), debug=debug)
     try:
-        oc_setup(cluster, driver)
+        oc_setup(cluster, debug)
     except subprocess.CalledProcessError as e:
         print(f"[bold red]'oc login' failed![/]\nException: {e}")
         sys.exit(1)
