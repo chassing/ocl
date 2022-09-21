@@ -132,8 +132,12 @@ def oc_project(cluster: ClusterV1, project: str) -> None:
     run(["oc", "project", project], cluster=cluster)
 
 
-def oc_check_login(cluster: ClusterV1) -> None:
-    run(["oc", "cluster-info"], cluster=cluster)
+def oc_check_login(cluster: ClusterV1) -> bool:
+    try:
+        run(["oc", "cluster-info"], cluster=cluster)
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
 
 def setup_driver(user_data_dir_path: Path, debug: bool) -> WebDriver:
@@ -158,7 +162,7 @@ def github_login(driver: WebDriver) -> None:
     otp_el.send_keys(get_var("GITHUB_TOTP"))
 
 
-def oc_setup(cluster: ClusterV1, debug: bool) -> None:
+def oc_setup(cluster: ClusterV1, debug: bool, refresh_login: bool) -> None:
     with Progress(
         SpinnerColumn(), TextColumn("[progress.description]{task.description}")
     ) as progress:
@@ -166,60 +170,59 @@ def oc_setup(cluster: ClusterV1, debug: bool) -> None:
         with lock:
             progress.remove_task(task)
 
-            task = progress.add_task(
-                description="Testing already logged in ..", total=1
-            )
-            try:
-                oc_check_login(cluster)
-                progress.remove_task(task)
-            except subprocess.CalledProcessError:
-                # not logged in
-                progress.remove_task(task)
-
+            if not refresh_login:
                 task = progress.add_task(
-                    description="Opening browser headless ...", total=1
+                    description="Testing already logged in ..", total=1
                 )
-                driver = setup_driver(
-                    user_data_dir_path=Path(appdirs.user_cache_dir), debug=debug
-                )
+                logged_in = oc_check_login(cluster)
                 progress.remove_task(task)
 
-                try:
-                    task = progress.add_task(
-                        description="Retrieving token ...", total=1
+            if not refresh_login and logged_in:
+                return
+
+            # not logged in or login enforced
+            task = progress.add_task(
+                description="Opening browser headless ...", total=1
+            )
+            driver = setup_driver(
+                user_data_dir_path=Path(appdirs.user_cache_dir), debug=debug
+            )
+            progress.remove_task(task)
+
+            try:
+                task = progress.add_task(description="Retrieving token ...", total=1)
+                driver.get(auth_url(cluster.console_url))
+
+                if driver.current_url.startswith("https://github.com/login?"):
+                    subtask = progress.add_task(
+                        description="GitHub  login ...", total=1
                     )
-                    driver.get(auth_url(cluster.console_url))
-
-                    if driver.current_url.startswith("https://github.com/login?"):
+                    github_login(driver=driver)
+                    progress.remove_task(subtask)
+                    if driver.current_url.startswith(
+                        "https://github.com/login/oauth/authorize?"
+                    ):
+                        # grant access
                         subtask = progress.add_task(
-                            description="GitHub  login ...", total=1
+                            description="GitHub  authorize app-sre ...", total=1
                         )
-                        github_login(driver=driver)
+                        time.sleep(4)
+                        driver.find_element(By.ID, "js-oauth-authorize-btn").click()
                         progress.remove_task(subtask)
-                        if driver.current_url.startswith(
-                            "https://github.com/login/oauth/authorize?"
-                        ):
-                            # grant access
-                            subtask = progress.add_task(
-                                description="GitHub  authorize app-sre ...", total=1
-                            )
-                            time.sleep(4)
-                            driver.find_element(By.ID, "js-oauth-authorize-btn").click()
-                            progress.remove_task(subtask)
 
-                    # Clicking the "Display Token" button
-                    driver.find_element(By.CSS_SELECTOR, "button").click()
-                    # Getting the auth token
-                    token = driver.find_element(By.CSS_SELECTOR, "code").text
-                    progress.remove_task(task)
-                finally:
-                    for handle in driver.window_handles:
-                        driver.switch_to.window(handle)
-                        driver.close()
-
-                task = progress.add_task(description="CLI login ...", total=1)
-                oc_login(cluster=cluster, token=token)
+                # Clicking the "Display Token" button
+                driver.find_element(By.CSS_SELECTOR, "button").click()
+                # Getting the auth token
+                token = driver.find_element(By.CSS_SELECTOR, "code").text
                 progress.remove_task(task)
+            finally:
+                for handle in driver.window_handles:
+                    driver.switch_to.window(handle)
+                    driver.close()
+
+            task = progress.add_task(description="CLI login ...", total=1)
+            oc_login(cluster=cluster, token=token)
+            progress.remove_task(task)
 
 
 def blend_text(
@@ -255,6 +258,9 @@ def main(
         False, help="Open the console in browser instead of local shell"
     ),
     display_banner: bool = typer.Option(True, help="Display shiny OCL banner"),
+    refresh_login: bool = typer.Option(
+        False, help="Enforce a new login to refresh the session."
+    ),
 ):
     logging.basicConfig(
         level=logging.INFO if not debug else logging.DEBUG, format="%(message)s"
@@ -275,7 +281,7 @@ def main(
         sys.exit(0)
 
     try:
-        oc_setup(cluster, debug)
+        oc_setup(cluster, debug=debug, refresh_login=refresh_login)
     except subprocess.CalledProcessError as e:
         print(f"[bold red]'oc login' failed![/]\nException: {e}")
         sys.exit(1)
