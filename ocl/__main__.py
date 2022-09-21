@@ -250,9 +250,11 @@ def bye():
 def main(
     cluster_name: str = typer.Argument(None, help="Cluster name"),
     project: str = typer.Argument(None, help="Namespace/Project"),
-    debug: bool = False,
-    open_in_browser: bool = False,
-    display_banner: bool = True,
+    debug: bool = typer.Option(False, help="Enable debug mode"),
+    open_in_browser: bool = typer.Option(
+        False, help="Open the console in browser instead of local shell"
+    ),
+    display_banner: bool = typer.Option(True, help="Display shiny OCL banner"),
 ):
     logging.basicConfig(
         level=logging.INFO if not debug else logging.DEBUG, format="%(message)s"
