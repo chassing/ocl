@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0](https://github.com/chassing/ocl/compare/v0.5.1...v0.6.0) (2022-09-21)
+
+
+### Features
+
+* --refresh-login cli option to enforce a new token ([4dd2a45](https://github.com/chassing/ocl/commit/4dd2a451e2adc8e28d1457cd32ce571f60f73cdc))
+
+
+### Bug Fixes
+
+* add file lock to handle running ocl concurrently ([9905a94](https://github.com/chassing/ocl/commit/9905a9443bb184134c28abd755870ac2a58cf45f))
+* document cli options (--help) ([7c65e50](https://github.com/chassing/ocl/commit/7c65e5090ba91eebb3bd096bd61eac140a552af3))
+
 ## [0.5.1](https://github.com/chassing/ocl/compare/v0.5.0...v0.5.1) (2022-09-19)
 
 
