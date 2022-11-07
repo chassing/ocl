@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/chassing/ocl/compare/v0.6.0...v0.7.0) (2022-11-07)
+
+
+### Features
+
+* **open-in-browser:** "." to reference OCL_CLUSTER_NAME ([3ea2a0e](https://github.com/chassing/ocl/commit/3ea2a0eefeab52bc207583606af695cf6497b416))
+
 ## [0.6.0](https://github.com/chassing/ocl/compare/v0.5.1...v0.6.0) (2022-09-21)
 
 
