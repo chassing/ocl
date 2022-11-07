@@ -268,6 +268,13 @@ def main(
     if display_banner:
         print(blend_text(BANNER, (32, 32, 255), (255, 32, 255)))
 
+    if open_in_browser and cluster_name == ".":
+        cluster_name = os.environ.get("OCL_CLUSTER_NAME", "")
+        if not cluster_name:
+            print("[bold red]environment variable OCL_CLUSTER_NAME not set")
+            sys.exit(1)
+        project = run(["oc", "project", "-q"]).stdout.decode("utf-8").strip()
+
     cluster = select_cluster(cluster_name)
     browser_url = cluster.console_url
 
