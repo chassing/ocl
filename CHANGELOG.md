@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/chassing/ocl/compare/v0.7.0...v0.8.0) (2022-11-08)
+
+
+### Features
+
+* **app-interface:** cache app-interface cluster query result for one week ([44f002e](https://github.com/chassing/ocl/commit/44f002e284512af6c87968376a236882ecb2167a))
+
 ## [0.7.0](https://github.com/chassing/ocl/compare/v0.6.0...v0.7.0) (2022-11-07)
 
 
