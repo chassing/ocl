@@ -18,6 +18,7 @@ rich = "^12.5.1"
 appdirs = "^1.4.4"
 pydantic = "^1.9.2"
 "flufl.lock" = "^7.1.1"
+diskcache = "^5.4.0"
 
 [tool.poetry.dev-dependencies]
 types-requests = "^2.28.7"
