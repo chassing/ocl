@@ -33,6 +33,9 @@ $ pipx run openshift-cluster-login
 ```shell
 $ ocl
 ```
+
+<img src="demo/quickstart.gif"/>
+
 This spawns a new shell with the following environment variables are set:
 
 * `KUBECONFIG` - path to kubeconfig file
