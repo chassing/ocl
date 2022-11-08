@@ -16,6 +16,7 @@ from typing import Union
 import requests
 import typer
 from appdirs import AppDirs
+from diskcache import Cache
 from flufl.lock import Lock
 from iterfzf import iterfzf
 from rich import print
@@ -35,7 +36,9 @@ from .cluster import query_string
 appdirs = AppDirs("ocl", "ca-net")
 lock_file_name = Path(tempfile.gettempdir()) / "ocl.lock"
 lock = Lock(str(lock_file_name), lifetime=60, default_timeout=65)
+cache = Cache(directory=str(Path(appdirs.user_cache_dir) / "gql_cache"))
 
+ONE_WEEK = 7 * 24 * 60 * 60
 BANNER = """
             ';cloooolc;'            ';clloooolc;'        ':lll:'
           ;d0NWMMMMMMWN0d;        ;d0NWMMMMMMMWN0d;      oNMMMXc
@@ -84,15 +87,21 @@ def select_cluster(cluster_name: str = "") -> ClusterV1:
     return clusters_dict[cluster_name]
 
 
+def gql_query() -> dict[Any, Any]:
+    if "gql_data" not in cache:
+        headers = {"Authorization": get_var("APP_INT_TOKEN")}
+        res = requests.post(
+            url=get_var("APP_INTERFACE_URL"),
+            json={"query": query_string()},
+            headers=headers,
+        )
+        res.raise_for_status()
+        cache.set("gql_data", res.json()["data"], expire=ONE_WEEK)
+    return cache["gql_data"]
+
+
 def clusters_from_app_interface() -> list[ClusterV1]:
-    headers = {"Authorization": get_var("APP_INT_TOKEN")}
-    res = requests.post(
-        url=get_var("APP_INTERFACE_URL"),
-        json={"query": query_string()},
-        headers=headers,
-    )
-    res.raise_for_status()
-    clusters = ClusterQueryData(**res.json()["data"]).clusters or []
+    clusters = ClusterQueryData(**gql_query()).clusters or []
     return [c for c in clusters if c.auth]
 
 
