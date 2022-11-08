@@ -75,11 +75,12 @@ def get_var(var_name: str, default: Any = None) -> str:
 
 def select_cluster(cluster_name: str = "") -> ClusterV1:
     clusters = clusters_from_app_interface()
-    user_clusters = [
+    # user defined clusters
+    clusters += [
         ClusterV1(**c) for c in json.loads(get_var("USER_CLUSTERS", default="[]"))
     ]
-    clusters_dict = {c.name: c for c in clusters + user_clusters}
 
+    clusters_dict = {c.name: c for c in clusters}
     if not cluster_name:
         cluster_name = iterfzf((cname for cname in sorted(clusters_dict.keys())))
         if not cluster_name:
@@ -292,14 +293,14 @@ def main(
         project = run(["oc", "project", "-q"]).stdout.decode("utf-8").strip()
 
     cluster = select_cluster(cluster_name)
-    browser_url = cluster.console_url
+    console_url = cluster.console_url
 
     if project:
-        browser_url += f"/k8s/cluster/projects/{project}"
+        console_url += f"/k8s/cluster/projects/{project}"
 
     if open_in_browser:
-        print(f"[bold green]Opening [/] {browser_url}")
-        subprocess.run(["open", browser_url])
+        print(f"[bold green]Opening [/] {console_url}")
+        subprocess.run(["open", console_url])
         bye()
         sys.exit(0)
 
@@ -321,7 +322,7 @@ def main(
     print(
         f"""Spawn new shell, use exit or CTRL+d to leave it!
 
-    URL: {browser_url}
+    URL: {console_url}
     Cluster: [bold green] {cluster.name}[/]
     {f'Project: [bold yellow]☸ {project}[/]' if project else ''}"""
     )
