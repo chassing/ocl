@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/chassing/ocl/compare/v0.8.0...v0.8.1) (2022-11-28)
+
+
+### Bug Fixes
+
+* adapt cluster GQL changes ([070c168](https://github.com/chassing/ocl/commit/070c1687b63e026b4aa35539a2605f3466b1819d))
+
 ## [0.8.0](https://github.com/chassing/ocl/compare/v0.7.0...v0.8.0) (2022-11-08)
 
 
