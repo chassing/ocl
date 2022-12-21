@@ -193,6 +193,17 @@ def github_login(driver: WebDriver) -> None:
         submit_btn.click()
 
 
+def redhat_sso(driver: WebDriver) -> None:
+    # fill username
+    driver.find_element(By.ID, "username").send_keys(get_var("RH_USERNAME"))
+    # fill password and token
+    driver.find_element(By.ID, "password").send_keys(
+        get_var("RH_PASSWORD") + get_var("RH_TOTP")
+    )
+    # submit form
+    driver.find_element(By.ID, "submit").click()
+
+
 def oc_setup(
     cluster: ClusterV1, debug: bool, refresh_login: bool, idp: Optional[str] = None
 ) -> None:
@@ -234,6 +245,13 @@ def oc_setup(
                             description="GitHub  login ...", total=1
                         )
                         github_login(driver=driver)
+                        progress.remove_task(subtask)
+                    else:
+                        # redhat SSO
+                        subtask = progress.add_task(
+                            description="Red Hat   login ...", total=1
+                        )
+                        redhat_sso(driver=driver)
                         progress.remove_task(subtask)
 
                     # wait for "Display Token" button to appear
