@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/chassing/ocl/compare/v0.10.0...v0.10.1) (2022-12-21)
+
+
+### Bug Fixes
+
+* **browser:** more robust wait for login pages ([14d13af](https://github.com/chassing/ocl/commit/14d13af166d7354e4fefeebe23689c7251d0e207))
+
 ## [0.10.0](https://github.com/chassing/ocl/compare/v0.9.0...v0.10.0) (2022-12-21)
 
 
