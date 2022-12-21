@@ -114,9 +114,9 @@ def clusters_from_app_interface() -> list[ClusterV1]:
     return [c for c in clusters if c.auth]
 
 
-def auth_url(console_url: str) -> str:
+def auth_url(console_url: str, idp: Optional[str]) -> str:
     apps_suffix = ".".join(console_url.split(".")[1:])
-    return f"https://oauth-openshift.{apps_suffix}/oauth/authorize?client_id=openshift-browser-client&idp=github-app-sre&redirect_uri=https%3A%2F%2Foauth-openshift.{apps_suffix}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
+    return f"https://oauth-openshift.{apps_suffix}/oauth/authorize?client_id=openshift-browser-client{'&idp=' + idp if idp else ''}&redirect_uri=https%3A%2F%2Foauth-openshift.{apps_suffix}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
 
 
 def kubeconfig(cluster: ClusterV1, temp_kube_config: bool) -> str:
@@ -187,7 +187,9 @@ def github_login(driver: WebDriver) -> None:
     otp_el.send_keys(get_var("GITHUB_TOTP"))
 
 
-def oc_setup(cluster: ClusterV1, debug: bool, refresh_login: bool) -> None:
+def oc_setup(
+    cluster: ClusterV1, debug: bool, refresh_login: bool, idp: Optional[str] = None
+) -> None:
     with Progress(
         SpinnerColumn(), TextColumn("[progress.description]{task.description}")
     ) as progress:
@@ -205,45 +207,54 @@ def oc_setup(cluster: ClusterV1, debug: bool, refresh_login: bool) -> None:
             if not refresh_login and logged_in:
                 return
 
-            # not logged in or login enforced
-            task = progress.add_task(
-                description="Opening browser headless ...", total=1
-            )
-            driver = setup_driver(
-                user_data_dir_path=Path(appdirs.user_cache_dir), debug=debug
-            )
-            progress.remove_task(task)
-
-            try:
-                task = progress.add_task(description="Retrieving token ...", total=1)
-                driver.get(auth_url(cluster.console_url))
-
-                if driver.current_url.startswith("https://github.com/login?"):
-                    subtask = progress.add_task(
-                        description="GitHub  login ...", total=1
-                    )
-                    github_login(driver=driver)
-                    progress.remove_task(subtask)
-                    if driver.current_url.startswith(
-                        "https://github.com/login/oauth/authorize?"
-                    ):
-                        # grant access
-                        subtask = progress.add_task(
-                            description="GitHub  authorize app-sre ...", total=1
-                        )
-                        time.sleep(4)
-                        driver.find_element(By.ID, "js-oauth-authorize-btn").click()
-                        progress.remove_task(subtask)
-
-                # Clicking the "Display Token" button
-                driver.find_element(By.CSS_SELECTOR, "button").click()
-                # Getting the auth token
-                token = driver.find_element(By.CSS_SELECTOR, "code").text
+            if idp:
+                # not logged in or login enforced
+                task = progress.add_task(
+                    description="Opening browser headless ...", total=1
+                )
+                driver = setup_driver(
+                    user_data_dir_path=Path(appdirs.user_cache_dir), debug=debug
+                )
                 progress.remove_task(task)
-            finally:
-                for handle in driver.window_handles:
-                    driver.switch_to.window(handle)
-                    driver.close()
+
+                try:
+                    task = progress.add_task(
+                        description="Retrieving token ...", total=1
+                    )
+                    driver.get(auth_url(cluster.console_url, idp))
+
+                    if driver.current_url.startswith("https://github.com/login?"):
+                        subtask = progress.add_task(
+                            description="GitHub  login ...", total=1
+                        )
+                        github_login(driver=driver)
+                        progress.remove_task(subtask)
+                        if driver.current_url.startswith(
+                            "https://github.com/login/oauth/authorize?"
+                        ):
+                            # grant access
+                            subtask = progress.add_task(
+                                description="GitHub  authorize app-sre ...", total=1
+                            )
+                            time.sleep(4)
+                            driver.find_element(By.ID, "js-oauth-authorize-btn").click()
+                            progress.remove_task(subtask)
+
+                    # Clicking the "Display Token" button
+                    driver.find_element(By.CSS_SELECTOR, "button").click()
+                    # Getting the auth token
+                    token = driver.find_element(By.TAG_NAME, "code").text
+                    progress.remove_task(task)
+                finally:
+                    for handle in driver.window_handles:
+                        driver.switch_to.window(handle)
+                        driver.close()
+            else:
+                webbrowser.open(auth_url(cluster.console_url, idp=None))
+                progress.stop()
+                # manual login
+                token = Prompt.ask("Enter token", password=True)
+                progress.start()
 
             task = progress.add_task(description="CLI login ...", total=1)
             oc_login(cluster=cluster, token=token)
@@ -286,6 +297,10 @@ def main(
     refresh_login: bool = typer.Option(
         False, help="Enforce a new login to refresh the session."
     ),
+    idp: str = typer.Option(
+        "github-app-sre",
+        help="Automatically login via given IDP. Use 'manual' for manual login.",
+    ),
 ):
     logging.basicConfig(
         level=logging.INFO if not debug else logging.DEBUG, format="%(message)s"
@@ -313,7 +328,12 @@ def main(
         sys.exit(0)
 
     try:
-        oc_setup(cluster, debug=debug, refresh_login=refresh_login)
+        oc_setup(
+            cluster,
+            debug=debug,
+            refresh_login=refresh_login,
+            idp=idp if idp != "manual" else None,
+        )
     except subprocess.CalledProcessError as e:
         print(f"[bold red]'oc login' failed![/]\nException: {e}")
         sys.exit(1)
