@@ -7,11 +7,14 @@ import subprocess
 import sys
 import tempfile
 import time
+import webbrowser
 from pathlib import Path
-from typing import Any
-from typing import Optional
-from typing import Tuple
-from typing import Union
+from typing import (
+    Any,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import requests
 import typer
@@ -20,18 +23,23 @@ from diskcache import Cache
 from flufl.lock import Lock
 from iterfzf import iterfzf
 from rich import print
-from rich.progress import Progress
-from rich.progress import SpinnerColumn
-from rich.progress import TextColumn
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+)
+from rich.prompt import Prompt
 from rich.text import Text
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
-from .cluster import ClusterQueryData
-from .cluster import ClusterV1
-from .cluster import query_string
+from .cluster import (
+    ClusterQueryData,
+    ClusterV1,
+    query_string,
+)
 
 appdirs = AppDirs("ocl", "ca-net")
 lock_file_name = Path(tempfile.gettempdir()) / "ocl.lock"
