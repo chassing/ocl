@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/chassing/ocl/compare/v0.8.1...v0.9.0) (2022-12-21)
+
+
+### Features
+
+* --idp option to support manual logins ([be3560f](https://github.com/chassing/ocl/commit/be3560f0c01cb239d95d9dc34d6b32c048392b8d))
+
 ## [0.8.1](https://github.com/chassing/ocl/compare/v0.8.0...v0.8.1) (2022-11-28)
 
 
