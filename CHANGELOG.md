@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.10.0](https://github.com/chassing/ocl/compare/v0.9.0...v0.10.0) (2022-12-21)
+
+
+### Features
+
+* **idp:** Red Hat SSO IDP support ([c35fceb](https://github.com/chassing/ocl/commit/c35fcebd11e44918926b3d953b3c84bddfab5adf))
+
+
+### Bug Fixes
+
+* **browser:** improve performance; no more implicit waits ([a1c01a0](https://github.com/chassing/ocl/commit/a1c01a0133cb0aeb0e542a76e1552ea77dfa45ee))
+* **deps:** update dependencies ([69b79e2](https://github.com/chassing/ocl/commit/69b79e2ae2feddf8faba4c8ce229d7e89b5de2c5))
+
 ## [0.9.0](https://github.com/chassing/ocl/compare/v0.8.1...v0.9.0) (2022-12-21)
 
 
