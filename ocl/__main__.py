@@ -176,8 +176,10 @@ def setup_driver(user_data_dir_path: Path, debug: bool) -> WebDriver:
 
 
 def github_login(driver: WebDriver) -> None:
-    login_el = driver.find_element(By.ID, "login_field")
-    login_el.send_keys(get_var("GITHUB_USERNAME"))
+    username_input = WebDriverWait(driver, 5, 0.1).until(
+        EC.element_to_be_clickable((By.ID, "login_field"))
+    )
+    username_input.send_keys(get_var("GITHUB_USERNAME"))
     pass_el = driver.find_element(By.ID, "password")
     pass_el.send_keys(get_var("GITHUB_PASSWORD"))
     # submit form
@@ -187,15 +189,18 @@ def github_login(driver: WebDriver) -> None:
     otp_el.send_keys(get_var("GITHUB_TOTP"))
     if driver.current_url.startswith("https://github.com/login/oauth/authorize?"):
         # grant access
-        submit_btn = WebDriverWait(driver, 10).until(
+        submit_btn = WebDriverWait(driver, 5, 0.1).until(
             EC.element_to_be_clickable((By.ID, "js-oauth-authorize-btn"))
         )
         submit_btn.click()
 
 
 def redhat_sso(driver: WebDriver) -> None:
+    username_input = WebDriverWait(driver, 5, 0.1).until(
+        EC.element_to_be_clickable((By.ID, "username"))
+    )
     # fill username
-    driver.find_element(By.ID, "username").send_keys(get_var("RH_USERNAME"))
+    username_input.send_keys(get_var("RH_USERNAME"))
     # fill password and token
     driver.find_element(By.ID, "password").send_keys(
         get_var("RH_PASSWORD") + get_var("RH_TOTP")
@@ -255,7 +260,7 @@ def oc_setup(
                         progress.remove_task(subtask)
 
                     # wait for "Display Token" button to appear
-                    display_token_btn = WebDriverWait(driver, 10).until(
+                    display_token_btn = WebDriverWait(driver, 5, 0.1).until(
                         EC.presence_of_element_located((By.CSS_SELECTOR, "button"))
                     )
                     # Clicking the "Display Token" button
