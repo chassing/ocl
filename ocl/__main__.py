@@ -6,7 +6,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
 import webbrowser
 from pathlib import Path
 from typing import (
@@ -34,6 +33,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 from .cluster import (
     ClusterQueryData,
@@ -171,7 +172,6 @@ def setup_driver(user_data_dir_path: Path, debug: bool) -> WebDriver:
         chrome_options.add_argument("--headless")
     chrome_options.add_argument(f"user-data-dir={user_data_dir_path}")
     driver = webdriver.Chrome(options=chrome_options)
-    driver.implicitly_wait(int(get_var("WAIT", default=2)))
     return driver
 
 
@@ -185,6 +185,12 @@ def github_login(driver: WebDriver) -> None:
     # Filling the OTP token - form is auto submitted
     otp_el = driver.find_element(By.ID, "totp")
     otp_el.send_keys(get_var("GITHUB_TOTP"))
+    if driver.current_url.startswith("https://github.com/login/oauth/authorize?"):
+        # grant access
+        submit_btn = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "js-oauth-authorize-btn"))
+        )
+        submit_btn.click()
 
 
 def oc_setup(
@@ -229,19 +235,13 @@ def oc_setup(
                         )
                         github_login(driver=driver)
                         progress.remove_task(subtask)
-                        if driver.current_url.startswith(
-                            "https://github.com/login/oauth/authorize?"
-                        ):
-                            # grant access
-                            subtask = progress.add_task(
-                                description="GitHub  authorize app-sre ...", total=1
-                            )
-                            time.sleep(4)
-                            driver.find_element(By.ID, "js-oauth-authorize-btn").click()
-                            progress.remove_task(subtask)
 
+                    # wait for "Display Token" button to appear
+                    display_token_btn = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, "button"))
+                    )
                     # Clicking the "Display Token" button
-                    driver.find_element(By.CSS_SELECTOR, "button").click()
+                    display_token_btn.click()
                     # Getting the auth token
                     token = driver.find_element(By.TAG_NAME, "code").text
                     progress.remove_task(task)
