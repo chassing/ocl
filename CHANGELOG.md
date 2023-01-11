@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/chassing/ocl/compare/v0.10.1...v0.11.0) (2023-01-11)
+
+
+### Features
+
+* automatic IDP detection ([a24ffb7](https://github.com/chassing/ocl/commit/a24ffb7fb1f3ae2022980b5a3d9b6c0eb4ae3be4))
+
 ## [0.10.1](https://github.com/chassing/ocl/compare/v0.10.0...v0.10.1) (2022-12-21)
 
 
