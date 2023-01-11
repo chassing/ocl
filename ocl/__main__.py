@@ -120,6 +120,14 @@ def auth_url(console_url: str, idp: Optional[str]) -> str:
     return f"https://oauth-openshift.{apps_suffix}/oauth/authorize?client_id=openshift-browser-client{'&idp=' + idp if idp else ''}&redirect_uri=https%3A%2F%2Foauth-openshift.{apps_suffix}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
 
 
+def select_idp(console_url: str, idps: list[str]) -> Optional[str]:
+    for idp in idps:
+        req = requests.get(auth_url(console_url, idp), allow_redirects=False)
+        if req.status_code != 500:
+            return idp
+    return None
+
+
 def kubeconfig(cluster: ClusterV1, temp_kube_config: bool) -> str:
     kc = f"{Path.home()}/.kube/config_{cluster.name}"
     if temp_kube_config:
@@ -210,7 +218,7 @@ def redhat_sso(driver: WebDriver) -> None:
 
 
 def oc_setup(
-    cluster: ClusterV1, debug: bool, refresh_login: bool, idp: Optional[str] = None
+    cluster: ClusterV1, debug: bool, refresh_login: bool, idps: list[str]
 ) -> None:
     with Progress(
         SpinnerColumn(), TextColumn("[progress.description]{task.description}")
@@ -229,7 +237,7 @@ def oc_setup(
             if not refresh_login and logged_in:
                 return
 
-            if idp:
+            if idp := select_idp(cluster.console_url, idps=idps):
                 # not logged in or login enforced
                 task = progress.add_task(
                     description="Opening browser headless ...", total=1
@@ -320,9 +328,9 @@ def main(
     refresh_login: bool = typer.Option(
         False, help="Enforce a new login to refresh the session."
     ),
-    idp: str = typer.Option(
-        "github-app-sre",
-        help="Automatically login via given IDP. Use 'manual' for manual login.",
+    idp: list[str] = typer.Option(
+        ["redhat-app-sre-auth", "github-app-sre"],
+        help="Automatically login via given IDPs (use in given order, try next one if failed). Use 'manual' for manual login.",
     ),
 ):
     logging.basicConfig(
@@ -349,13 +357,12 @@ def main(
         subprocess.run(["open", console_url])
         bye()
         sys.exit(0)
-
     try:
         oc_setup(
             cluster,
             debug=debug,
             refresh_login=refresh_login,
-            idp=idp if idp != "manual" else None,
+            idps=idp,
         )
     except subprocess.CalledProcessError as e:
         print(f"[bold red]'oc login' failed![/]\nException: {e}")
