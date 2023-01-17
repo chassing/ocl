@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/chassing/ocl/compare/v0.11.0...v0.12.0) (2023-01-17)
+
+
+### Features
+
+* ask for missing env variables interactively ([fc0c534](https://github.com/chassing/ocl/commit/fc0c5345a51c4af0edcf039eec07b9f5794f4c67))
+
 ## [0.11.0](https://github.com/chassing/ocl/compare/v0.10.1...v0.11.0) (2023-01-11)
 
 
