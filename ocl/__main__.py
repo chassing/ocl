@@ -70,7 +70,7 @@ BANNER = """
 app = typer.Typer(rich_markup_mode="rich")
 
 
-def get_var(var_name: str, default: Any = None) -> str:
+def get_var(var_name: str, default: Any = None, hidden: bool = False) -> str:
     if cmd := os.getenv(f"OCL_{var_name}_COMMAND"):
         return (
             run(cmd, shell=True, check=True, capture_output=True)
@@ -79,7 +79,14 @@ def get_var(var_name: str, default: Any = None) -> str:
         )
     if default is not None:
         return os.environ.get(f"OCL_{var_name}", default)
-    return os.environ[f"OCL_{var_name}"]
+
+    if var_name in os.environ:
+        return os.environ[f"OCL_{var_name}"]
+
+    print(
+        f"[bold red]Missing environment variable [bold green]OCL_{var_name}[bold green][/bold red]"
+    )
+    return Prompt.ask(f"Enter OCL_{var_name}", password=hidden)
 
 
 def select_cluster(cluster_name: str = "") -> ClusterV1:
@@ -99,7 +106,7 @@ def select_cluster(cluster_name: str = "") -> ClusterV1:
 
 def gql_query() -> dict[Any, Any]:
     if "gql_data" not in cache:
-        headers = {"Authorization": get_var("APP_INT_TOKEN")}
+        headers = {"Authorization": get_var("APP_INT_TOKEN", hidden=True)}
         res = requests.post(
             url=get_var("APP_INTERFACE_URL"),
             json={"query": query_string()},
@@ -189,7 +196,7 @@ def github_login(driver: WebDriver) -> None:
     )
     username_input.send_keys(get_var("GITHUB_USERNAME"))
     pass_el = driver.find_element(By.ID, "password")
-    pass_el.send_keys(get_var("GITHUB_PASSWORD"))
+    pass_el.send_keys(get_var("GITHUB_PASSWORD", hidden=True))
     # submit form
     driver.find_element(By.CSS_SELECTOR, ".btn-primary").click()
     # Filling the OTP token - form is auto submitted
@@ -211,7 +218,7 @@ def redhat_sso(driver: WebDriver) -> None:
     username_input.send_keys(get_var("RH_USERNAME"))
     # fill password and token
     driver.find_element(By.ID, "password").send_keys(
-        get_var("RH_PASSWORD") + get_var("RH_TOTP")
+        get_var("RH_PASSWORD", hidden=True) + get_var("RH_TOTP")
     )
     # submit form
     driver.find_element(By.ID, "submit").click()

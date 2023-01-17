@@ -46,27 +46,37 @@ This spawns a new shell with the following environment variables are set:
 
 OCL currently provides the following features (get help with `-h` or `--help`):
 
-- OpenShift console login (oc login) via GitHub authentication
+- OpenShift console login (`oc login`) via GitHub or Red Hat authentication
 - Get cluster information from app-interface or user-defined (`OCL_USER_CLUSTERS``)
-- Open OpenShift console in browser (`--open-in-browser`)
+_ Open the OpenShift `console in `the `browser`` (`--open-in-browser`)
 - Shell completion (`--install-completion`, `--show-completion`)
-- Credentials via environment variables or shell command (e.g. [1password CLI](https://developer.1password.com/docs/cli/))
+- Credentials via environment variables or shell command (e.g., [1password CLI](https://developer.1password.com/docs/cli/))
+- Cache App-Interface queries (via GraphQL) for one week
 
 
 ## Environment Variables
 
-| Variable Name                                       | Description                                                                                                                                 | Required           | Default |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------- |
-| OCL_GITHUB_USERNAME OCL_GITHUB_USERNAME_COMMAND     | Your GitHub username                                                                                                                        | :heavy_check_mark: |         |
-| OCL_GITHUB_PASSWORD OCL_GITHUB_PASSWORD_COMMAND     | Your GitHub password (e.g. command `op read op://Private/Github/password`)                                                                  | :heavy_check_mark: |         |
-| OCL_GITHUB_TOTP OCL_GITHUB_TOTP_COMMAND             | Your GitHub two factor token (e.g. command `op item get Github --otp`)                                                                      | :heavy_check_mark: |         |
-| OCL_WAIT OCL_WAIT_COMMAND                           | Selenium webdriver wait timeout                                                                                                             |                    | 2       |
-| OCL_APP_INTERFACE_URL OCL_APP_INTERFACE_URL_COMMAND | App-Interface URL                                                                                                                           | :heavy_check_mark: |         |
-| OCL_APP_INT_TOKEN OCL_APP_INT_TOKEN_COMMAND         | App-Interface authentication token                                                                                                          | :heavy_check_mark: |         |
-| USER_CLUSTERS USER_CLUSTERS_COMMAND                 | User defined clusters as json format (e.g. `[{"name": "local-kind", "serverUrl": "https://localhost:6443", "consoleUrl": "not available}]`) |                    | "[]"    |
+| Variable Name                                       | Description                                                                                                                                 | Default |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| OCL_GITHUB_USERNAME OCL_GITHUB_USERNAME_COMMAND     | Your GitHub username                                                                                                                        |         |
+| OCL_GITHUB_PASSWORD OCL_GITHUB_PASSWORD_COMMAND     | Your GitHub password (e.g. command `op read op://Private/Github/password`)                                                                  |         |
+| OCL_GITHUB_TOTP OCL_GITHUB_TOTP_COMMAND             | Your GitHub two factor token (e.g. command `op item get Github --otp`)                                                                      |         |
+| OCL_RH_USERNAME OCL_RH_USERNAME_COMMAND             | Your Red Hat username                                                                                                                       |         |
+| OCL_RH_PASSWORD OCL_RH_PASSWORD_COMMAND             | Your Red Hat password (e.g. command `op read op://Private/RH/password`)                                                                     |         |
+| OCL_RH_TOTP OCL_RH_TOTP_COMMAND                     | Your Red Hat two factor token (e.g. command `op item get RH --otp`)                                                                         |         |
+| OCL_WAIT OCL_WAIT_COMMAND                           | Selenium webdriver wait timeout                                                                                                             | 2       |
+| OCL_APP_INTERFACE_URL OCL_APP_INTERFACE_URL_COMMAND | App-Interface URL                                                                                                                           |         |
+| OCL_APP_INT_TOKEN OCL_APP_INT_TOKEN_COMMAND         | App-Interface authentication token                                                                                                          |         |
+| USER_CLUSTERS USER_CLUSTERS_COMMAND                 | User defined clusters as json format (e.g. `[{"name": "local-kind", "serverUrl": "https://localhost:6443", "consoleUrl": "not available}]`) | "[]"    |
 
-You can either set a variable, e.g. `export OCL_GITHUB_USERNAME="mail@example.com"` or retrieve it via a command, e.g. `export OCL_GITHUB_USERNAME_COMMAND="op read op://Private/Github/username"`
+You can either set a variable, e.g. `export OCL_GITHUB_USERNAME="mail@example.com"` or retrieve it via a command, e.g. `export OCL_GITHUB_USERNAME_COMMAND="op read op://Private/Github/username"`.
+If a variable is not set but needed, OCL will ask for it interactively.
 
+## App-Interface
+
+OCL retrieves the cluster information from app-interface via GraphQL (`OCL_APP_INTERFACE_URL`) and caches them
+in your user *cache directory* (on MacOS, e.g., `~/Library/Caches/ocl/gql_cache/`).
+Remove this directory to force a refresh.
 
 ## Limitations
 
