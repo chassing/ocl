@@ -71,20 +71,21 @@ app = typer.Typer(rich_markup_mode="rich")
 
 
 def get_var(var_name: str, default: Any = None, hidden: bool = False) -> str:
-    if cmd := os.getenv(f"OCL_{var_name}_COMMAND"):
+    env_var = f"OCL_{var_name}"
+    if cmd := os.getenv(f"{env_var}_COMMAND"):
         return (
             run(cmd, shell=True, check=True, capture_output=True)
             .stdout.decode("utf-8")
             .rstrip("\n")
         )
     if default is not None:
-        return os.environ.get(f"OCL_{var_name}", default)
+        return os.environ.get(env_var, default)
 
-    if var_name in os.environ:
-        return os.environ[f"OCL_{var_name}"]
+    if env_var in os.environ:
+        return os.environ[env_var]
 
     print(
-        f"[bold red]Missing environment variable [bold green]OCL_{var_name}[bold green][/bold red]"
+        f"[bold red]Missing environment variable [bold green]{env_var}[bold green][/bold red]"
     )
     return Prompt.ask(f"Enter OCL_{var_name}", password=hidden)
 
