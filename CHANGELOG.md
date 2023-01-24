@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/chassing/ocl/compare/v0.12.0...v0.12.1) (2023-01-24)
+
+
+### Bug Fixes
+
+* **env vars:** fix getting environment variables ([6d4d5a3](https://github.com/chassing/ocl/commit/6d4d5a3d705024381778907952f392fd03572019))
+
 ## [0.12.0](https://github.com/chassing/ocl/compare/v0.11.0...v0.12.0) (2023-01-17)
 
 
