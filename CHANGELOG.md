@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.2](https://github.com/chassing/ocl/compare/v0.12.1...v0.12.2) (2023-02-07)
+
+
+### Bug Fixes
+
+* **github:** fix TOTP input field selector ([32e6958](https://github.com/chassing/ocl/commit/32e6958fac568acb12ce2b5342c785529d905976))
+
 ## [0.12.1](https://github.com/chassing/ocl/compare/v0.12.0...v0.12.1) (2023-01-24)
 
 
