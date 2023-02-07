@@ -201,7 +201,7 @@ def github_login(driver: WebDriver) -> None:
     # submit form
     driver.find_element(By.CSS_SELECTOR, ".btn-primary").click()
     # Filling the OTP token - form is auto submitted
-    otp_el = driver.find_element(By.ID, "totp")
+    otp_el = driver.find_element(By.ID, "app_totp")
     otp_el.send_keys(get_var("GITHUB_TOTP"))
     if driver.current_url.startswith("https://github.com/login/oauth/authorize?"):
         # grant access
