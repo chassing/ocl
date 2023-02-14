@@ -185,7 +185,7 @@ def oc_check_login(cluster: ClusterV1) -> bool:
 def setup_driver(user_data_dir_path: Path, debug: bool) -> WebDriver:
     chrome_options = Options()
     if not debug:
-        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--headless=new")
     chrome_options.add_argument(f"user-data-dir={user_data_dir_path}")
     driver = webdriver.Chrome(options=chrome_options)
     return driver
@@ -267,7 +267,7 @@ def oc_setup(
                         )
                         github_login(driver=driver)
                         progress.remove_task(subtask)
-                    else:
+                    elif "auth.redhat.com" in driver.current_url:
                         # redhat SSO
                         subtask = progress.add_task(
                             description="Red Hat   login ...", total=1
