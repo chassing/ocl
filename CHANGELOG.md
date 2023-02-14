@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.3](https://github.com/chassing/ocl/compare/v0.12.2...v0.12.3) (2023-02-14)
+
+
+### Bug Fixes
+
+* **chromedriver:** fix headless mode ([8ff2ae6](https://github.com/chassing/ocl/commit/8ff2ae607d2abc7dca70a49171dc4c5890dd134b))
+
 ## [0.12.2](https://github.com/chassing/ocl/compare/v0.12.1...v0.12.2) (2023-02-07)
 
 
