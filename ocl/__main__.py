@@ -267,7 +267,7 @@ def oc_setup(
                         )
                         github_login(driver=driver)
                         progress.remove_task(subtask)
-                    elif "auth.redhat.com" in driver.current_url:
+                    elif "redhat.com" in driver.current_url:
                         # redhat SSO
                         subtask = progress.add_task(
                             description="Red Hat   login ...", total=1
