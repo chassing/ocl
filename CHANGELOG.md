@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.4](https://github.com/chassing/ocl/compare/v0.12.3...v0.12.4) (2023-02-17)
+
+
+### Bug Fixes
+
+* **redhat-idp:** support staging redhat SSO instance ([95ab055](https://github.com/chassing/ocl/commit/95ab055541d2bb0f6e888523ab96f0ca58c8a44a))
+
 ## [0.12.3](https://github.com/chassing/ocl/compare/v0.12.2...v0.12.3) (2023-02-14)
 
 
