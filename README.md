@@ -58,12 +58,6 @@ _ Open the OpenShift `console in `the `browser`` (`--open-in-browser`)
 
 | Variable Name                                       | Description                                                                                                                                 | Default |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| OCL_GITHUB_USERNAME OCL_GITHUB_USERNAME_COMMAND     | Your GitHub username                                                                                                                        |         |
-| OCL_GITHUB_PASSWORD OCL_GITHUB_PASSWORD_COMMAND     | Your GitHub password (e.g. command `op read op://Private/Github/password`)                                                                  |         |
-| OCL_GITHUB_TOTP OCL_GITHUB_TOTP_COMMAND             | Your GitHub two factor token (e.g. command `op item get Github --otp`)                                                                      |         |
-| OCL_RH_USERNAME OCL_RH_USERNAME_COMMAND             | Your Red Hat username                                                                                                                       |         |
-| OCL_RH_PASSWORD OCL_RH_PASSWORD_COMMAND             | Your Red Hat password (e.g. command `op read op://Private/RH/password`)                                                                     |         |
-| OCL_RH_TOTP OCL_RH_TOTP_COMMAND                     | Your Red Hat two factor token (e.g. command `op item get RH --otp`)                                                                         |         |
 | OCL_WAIT OCL_WAIT_COMMAND                           | Selenium webdriver wait timeout                                                                                                             | 2       |
 | OCL_APP_INTERFACE_URL OCL_APP_INTERFACE_URL_COMMAND | App-Interface URL                                                                                                                           |         |
 | OCL_APP_INT_TOKEN OCL_APP_INT_TOKEN_COMMAND         | App-Interface authentication token                                                                                                          |         |
@@ -80,12 +74,8 @@ Remove this directory to force a refresh.
 
 ## Limitations
 
-* MacOS only
-* Only Selenium `webdriver.Chrome` is supported and must be installed manually
-  ```shell
-  $ brew install --cask chromedriver
-  ```
-
+* Kerberos authentication only
+* Works only with a Red Hat associate account
 
 ## Development
 

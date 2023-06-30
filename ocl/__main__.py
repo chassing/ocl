@@ -21,6 +21,11 @@ from appdirs import AppDirs
 from diskcache import Cache
 from flufl.lock import Lock
 from iterfzf import iterfzf
+from pyquery import PyQuery as pq
+from requests_kerberos import (
+    OPTIONAL,
+    HTTPKerberosAuth,
+)
 from rich import print
 from rich.progress import (
     Progress,
@@ -29,12 +34,6 @@ from rich.progress import (
 )
 from rich.prompt import Prompt
 from rich.text import Text
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 
 from .cluster import (
     ClusterQueryData,
@@ -125,7 +124,9 @@ def clusters_from_app_interface() -> list[ClusterV1]:
 
 def auth_url(console_url: str, idp: Optional[str]) -> str:
     apps_suffix = ".".join(console_url.split(".")[1:])
-    return f"https://oauth-openshift.{apps_suffix}/oauth/authorize?client_id=openshift-browser-client{'&idp=' + idp if idp else ''}&redirect_uri=https%3A%2F%2Foauth-openshift.{apps_suffix}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
+    if idp:
+        return f"https://oauth-openshift.{apps_suffix}/oauth/authorize?client_id=openshift-browser-client&idp={idp}&redirect_uri=https%3A%2F%2Foauth-openshift.{apps_suffix}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
+    return f"https://oauth-openshift.{apps_suffix}/oauth/token/display"
 
 
 def select_idp(console_url: str, idps: list[str]) -> Optional[str]:
@@ -182,49 +183,6 @@ def oc_check_login(cluster: ClusterV1) -> bool:
         return False
 
 
-def setup_driver(user_data_dir_path: Path, debug: bool) -> WebDriver:
-    chrome_options = Options()
-    if not debug:
-        chrome_options.add_argument("--headless=new")
-    chrome_options.add_argument(f"user-data-dir={user_data_dir_path}")
-    driver = webdriver.Chrome(options=chrome_options)
-    return driver
-
-
-def github_login(driver: WebDriver) -> None:
-    username_input = WebDriverWait(driver, 5, 0.1).until(
-        EC.element_to_be_clickable((By.ID, "login_field"))
-    )
-    username_input.send_keys(get_var("GITHUB_USERNAME"))
-    pass_el = driver.find_element(By.ID, "password")
-    pass_el.send_keys(get_var("GITHUB_PASSWORD", hidden=True))
-    # submit form
-    driver.find_element(By.CSS_SELECTOR, ".btn-primary").click()
-    # Filling the OTP token - form is auto submitted
-    otp_el = driver.find_element(By.ID, "app_totp")
-    otp_el.send_keys(get_var("GITHUB_TOTP"))
-    if driver.current_url.startswith("https://github.com/login/oauth/authorize?"):
-        # grant access
-        submit_btn = WebDriverWait(driver, 5, 0.1).until(
-            EC.element_to_be_clickable((By.ID, "js-oauth-authorize-btn"))
-        )
-        submit_btn.click()
-
-
-def redhat_sso(driver: WebDriver) -> None:
-    username_input = WebDriverWait(driver, 5, 0.1).until(
-        EC.element_to_be_clickable((By.ID, "username"))
-    )
-    # fill username
-    username_input.send_keys(get_var("RH_USERNAME"))
-    # fill password and token
-    driver.find_element(By.ID, "password").send_keys(
-        get_var("RH_PASSWORD", hidden=True) + get_var("RH_TOTP")
-    )
-    # submit form
-    driver.find_element(By.ID, "submit").click()
-
-
 def oc_setup(
     cluster: ClusterV1, debug: bool, refresh_login: bool, idps: list[str]
 ) -> None:
@@ -246,48 +204,14 @@ def oc_setup(
                 return
 
             if idp := select_idp(cluster.console_url, idps=idps):
-                # not logged in or login enforced
-                task = progress.add_task(
-                    description="Opening browser headless ...", total=1
-                )
-                driver = setup_driver(
-                    user_data_dir_path=Path(appdirs.user_cache_dir), debug=debug
-                )
-                progress.remove_task(task)
-
-                try:
-                    task = progress.add_task(
-                        description="Retrieving token ...", total=1
+                with requests.Session() as session:
+                    session.auth = HTTPKerberosAuth(mutual_authentication=OPTIONAL)
+                    r = session.get(auth_url(cluster.console_url, idp))
+                    form_data = pq(r.text)("form").serialize_dict()
+                    r = session.post(
+                        auth_url(cluster.console_url, idp=None), data=form_data
                     )
-                    driver.get(auth_url(cluster.console_url, idp))
-
-                    if driver.current_url.startswith("https://github.com/login?"):
-                        subtask = progress.add_task(
-                            description="GitHub  login ...", total=1
-                        )
-                        github_login(driver=driver)
-                        progress.remove_task(subtask)
-                    elif "redhat.com" in driver.current_url:
-                        # redhat SSO
-                        subtask = progress.add_task(
-                            description="Red Hat   login ...", total=1
-                        )
-                        redhat_sso(driver=driver)
-                        progress.remove_task(subtask)
-
-                    # wait for "Display Token" button to appear
-                    display_token_btn = WebDriverWait(driver, 5, 0.1).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, "button"))
-                    )
-                    # Clicking the "Display Token" button
-                    display_token_btn.click()
-                    # Getting the auth token
-                    token = driver.find_element(By.TAG_NAME, "code").text
-                    progress.remove_task(task)
-                finally:
-                    for handle in driver.window_handles:
-                        driver.switch_to.window(handle)
-                        driver.close()
+                    token = pq(r.text)("code")[0].text
             else:
                 webbrowser.open(auth_url(cluster.console_url, idp=None))
                 progress.stop()
@@ -324,6 +248,16 @@ def bye():
     )
 
 
+def enable_requests_logging():
+    from http.client import HTTPConnection
+
+    HTTPConnection.debuglevel = 1
+    logging.getLogger().setLevel(logging.DEBUG)
+    requests_log = logging.getLogger("urllib3")
+    requests_log.setLevel(logging.DEBUG)
+    requests_log.propagate = True
+
+
 @app.command(epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
 def main(
     cluster_name: str = typer.Argument(None, help="Cluster name"),
@@ -337,13 +271,16 @@ def main(
         False, help="Enforce a new login to refresh the session."
     ),
     idp: list[str] = typer.Option(
-        ["redhat-app-sre-auth", "github-app-sre"],
+        ["redhat-app-sre-auth"],
         help="Automatically login via given IDPs (use in given order, try next one if failed). Use 'manual' for manual login.",
     ),
 ):
     logging.basicConfig(
         level=logging.INFO if not debug else logging.DEBUG, format="%(message)s"
     )
+    if debug:
+        enable_requests_logging()
+
     if display_banner:
         print(blend_text(BANNER, (32, 32, 255), (255, 32, 255)))
 
