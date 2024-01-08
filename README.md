@@ -47,7 +47,7 @@ This spawns a new shell with the following environment variables are set:
 OCL currently provides the following features (get help with `-h` or `--help`):
 
 - OpenShift console login (`oc login`) via GitHub or Red Hat authentication
-- Get cluster information from app-interface or user-defined (`OCL_USER_CLUSTERS``)
+- Get cluster and namespace information from app-interface or user-defined (`OCL_USER_CLUSTERS``)
 _ Open the OpenShift `console in `the `browser`` (`--open-in-browser`)
 - Shell completion (`--install-completion`, `--show-completion`)
 - Credentials via environment variables or shell command (e.g., [1password CLI](https://developer.1password.com/docs/cli/))
