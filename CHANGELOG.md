@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.0](https://github.com/chassing/ocl/compare/v0.12.4...v1.0.0) (2024-01-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* select namespaces instead of clusters
+* replace selenium oauth dance with Kerberos auth
+
+### Features
+
+* replace selenium oauth dance with Kerberos auth ([cd2f2d1](https://github.com/chassing/ocl/commit/cd2f2d10dd7e2ade5bd1e8c1581d587cd202e6d3))
+* select namespaces instead of clusters ([eb6c7e1](https://github.com/chassing/ocl/commit/eb6c7e11fc90d07bfc824fdacca232d6c11dfdaa))
+
 ## [0.12.4](https://github.com/chassing/ocl/compare/v0.12.3...v0.12.4) (2023-02-17)
 
 
