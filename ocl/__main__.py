@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import logging
 import os
@@ -35,11 +36,10 @@ from rich.progress import (
 from rich.prompt import Prompt
 from rich.text import Text
 
-from .cluster import (
-    ClusterQueryData,
-    ClusterV1,
-    query_string,
-)
+from ocl.gql_definitions.clusters import query as clusters_query
+from ocl.gql_definitions.fragments.cluster import Cluster
+from ocl.gql_definitions.namespaces import NamespaceV1
+from ocl.gql_definitions.namespaces import query as namespaces_query
 
 appdirs = AppDirs("ocl", "ca-net")
 lock_file_name = Path(tempfile.gettempdir()) / "ocl.lock"
@@ -89,37 +89,62 @@ def get_var(var_name: str, default: Any = None, hidden: bool = False) -> str:
     return Prompt.ask(f"Enter OCL_{var_name}", password=hidden)
 
 
-def select_cluster(cluster_name: str = "") -> ClusterV1:
+def select_cluster(cluster_name) -> Cluster:
     clusters = clusters_from_app_interface()
     # user defined clusters
     clusters += [
-        ClusterV1(**c) for c in json.loads(get_var("USER_CLUSTERS", default="[]"))
+        Cluster(**c) for c in json.loads(get_var("USER_CLUSTERS", default="[]"))
     ]
-
     clusters_dict = {c.name: c for c in clusters}
-    if not cluster_name:
-        cluster_name = iterfzf((cname for cname in sorted(clusters_dict.keys())))
-        if not cluster_name:
-            sys.exit(0)
+    if cluster_name not in clusters_dict:
+        print(
+            f"[bold red]Cluster [bold green]{cluster_name}[/bold green] not found. Available clusters:[/bold red]"
+        )
+        for cname in sorted(clusters_dict.keys()):
+            print(f"  [bold green]{cname}[/]")
+        sys.exit(1)
     return clusters_dict[cluster_name]
 
 
-def gql_query() -> dict[Any, Any]:
-    if "gql_data" not in cache:
+def select_namespace() -> NamespaceV1:
+    namespaces_dict = {ns.name: ns for ns in namespaces_from_app_interface()}
+    ns_name = iterfzf((cname for cname in sorted(namespaces_dict.keys())))
+    if not ns_name:
+        sys.exit(0)
+    return namespaces_dict[ns_name]
+
+
+def generate_md5_sum(input_string: str) -> str:
+    md5_hash = hashlib.md5()
+    md5_hash.update(input_string.encode("utf-8"))
+    return md5_hash.hexdigest()
+
+
+def gql_query(query: str) -> dict[Any, Any]:
+    checksum = generate_md5_sum(query)
+    if checksum not in cache:
         headers = {"Authorization": get_var("APP_INT_TOKEN", hidden=True)}
         res = requests.post(
             url=get_var("APP_INTERFACE_URL"),
-            json={"query": query_string()},
+            json={"query": query},
             headers=headers,
         )
         res.raise_for_status()
-        cache.set("gql_data", res.json()["data"], expire=ONE_WEEK)
-    return cache["gql_data"]
+        cache.set(checksum, res.json()["data"], expire=ONE_WEEK)
+    return cache[checksum]
 
 
-def clusters_from_app_interface() -> list[ClusterV1]:
-    clusters = ClusterQueryData(**gql_query()).clusters or []
+def clusters_from_app_interface() -> list[Cluster]:
+    clusters = clusters_query(query_func=gql_query).clusters or []
     return [c for c in clusters if c.auth]
+
+
+def namespaces_from_app_interface() -> list[NamespaceV1]:
+    return [
+        ns
+        for ns in namespaces_query(query_func=gql_query).namespaces or []
+        if not ns.delete
+    ]
 
 
 def auth_url(console_url: str, idp: Optional[str]) -> str:
@@ -132,12 +157,12 @@ def auth_url(console_url: str, idp: Optional[str]) -> str:
 def select_idp(console_url: str, idps: list[str]) -> Optional[str]:
     for idp in idps:
         req = requests.get(auth_url(console_url, idp), allow_redirects=False)
-        if req.status_code != 500:
+        if req.status_code != requests.codes["internal_server_error"]:
             return idp
     return None
 
 
-def kubeconfig(cluster: ClusterV1, temp_kube_config: bool) -> str:
+def kubeconfig(cluster: Cluster, temp_kube_config: bool) -> str:
     kc = f"{Path.home()}/.kube/config_{cluster.name}"
     if temp_kube_config:
         _, temp_file = tempfile.mkstemp(prefix=f"ocl.{cluster.name}.")
@@ -151,7 +176,7 @@ def run(
     shell: bool = False,
     check: bool = True,
     capture_output: bool = True,
-    cluster: Optional[ClusterV1] = None,
+    cluster: Optional[Cluster] = None,
     temp_kube_config: bool = False,
 ) -> subprocess.CompletedProcess:
     env = copy.deepcopy(os.environ)
@@ -164,18 +189,18 @@ def run(
     )
 
 
-def oc_login(cluster: ClusterV1, token: str) -> None:
+def oc_login(cluster: Cluster, token: str) -> None:
     run(
         ["oc", "login", f"--token={token}", f"--server={cluster.server_url}"],
         cluster=cluster,
     )
 
 
-def oc_project(cluster: ClusterV1, project: str) -> None:
+def oc_project(cluster: Cluster, project: str) -> None:
     run(["oc", "project", project], cluster=cluster)
 
 
-def oc_check_login(cluster: ClusterV1) -> bool:
+def oc_check_login(cluster: Cluster) -> bool:
     try:
         run(["oc", "cluster-info"], cluster=cluster)
         return True
@@ -184,7 +209,7 @@ def oc_check_login(cluster: ClusterV1) -> bool:
 
 
 def oc_setup(
-    cluster: ClusterV1, debug: bool, refresh_login: bool, idps: list[str]
+    cluster: Cluster, debug: bool, refresh_login: bool, idps: list[str]
 ) -> None:
     with Progress(
         SpinnerColumn(), TextColumn("[progress.description]{task.description}")
@@ -249,7 +274,7 @@ def bye():
 
 
 def enable_requests_logging():
-    from http.client import HTTPConnection
+    from http.client import HTTPConnection  # noqa: PLC0415
 
     HTTPConnection.debuglevel = 1
     logging.getLogger().setLevel(logging.DEBUG)
@@ -259,7 +284,7 @@ def enable_requests_logging():
 
 
 @app.command(epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
-def main(
+def main(  # noqa: PLR0912
     cluster_name: str = typer.Argument(None, help="Cluster name"),
     project: str = typer.Argument(None, help="Namespace/Project"),
     debug: bool = typer.Option(False, help="Enable debug mode"),
@@ -291,7 +316,12 @@ def main(
             sys.exit(1)
         project = run(["oc", "project", "-q"]).stdout.decode("utf-8").strip()
 
-    cluster = select_cluster(cluster_name)
+    if cluster_name:
+        cluster = select_cluster(cluster_name)
+    else:
+        ns = select_namespace()
+        cluster = ns.cluster
+        project = ns.name
     console_url = cluster.console_url
 
     if project:
@@ -299,7 +329,7 @@ def main(
 
     if open_in_browser:
         print(f"[bold green]Opening [/] {console_url}")
-        subprocess.run(["open", console_url])
+        subprocess.run(["open", console_url], check=False)
         bye()
         sys.exit(0)
     try:

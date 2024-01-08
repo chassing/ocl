@@ -1,0 +1,10 @@
+# qenerate: plugin=pydantic_v1
+
+fragment Cluster on Cluster_v1 {
+  name
+  serverUrl
+  consoleUrl
+  auth {
+    service
+  }
+}
