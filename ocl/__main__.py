@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -107,11 +108,15 @@ def select_cluster(cluster_name) -> Cluster:
 
 
 def select_namespace() -> NamespaceV1:
-    namespaces_dict = {ns.name: ns for ns in namespaces_from_app_interface()}
-    ns_name = iterfzf((cname for cname in sorted(namespaces_dict.keys())))
-    if not ns_name:
+    namespaces_dict = {
+        (ns.name, ns.cluster.name): ns for ns in namespaces_from_app_interface()
+    }
+    items = [f"{k[0]:<40} {k[1]}" for k in sorted(namespaces_dict.keys())]
+    selected_item = iterfzf(items, __extra__=[f"--header={'Namespace':<40} Cluster"])
+    if not selected_item:
         sys.exit(0)
-    return namespaces_dict[ns_name]
+    ns, cluster = re.split(r"\s+", selected_item)
+    return namespaces_dict[(ns.strip(), cluster.strip())]
 
 
 def generate_md5_sum(input_string: str) -> str:
