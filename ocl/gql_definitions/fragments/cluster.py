@@ -28,8 +28,13 @@ class ClusterAuthV1(ConfiguredBaseModel):
     service: str = Field(..., alias="service")
 
 
+class ClusterSpecV1(ConfiguredBaseModel):
+    hypershift: Optional[bool] = Field(..., alias="hypershift")
+
+
 class Cluster(ConfiguredBaseModel):
     name: str = Field(..., alias="name")
     server_url: str = Field(..., alias="serverUrl")
     console_url: str = Field(..., alias="consoleUrl")
     auth: list[ClusterAuthV1] = Field(..., alias="auth")
+    spec: Optional[ClusterSpecV1] = Field(..., alias="spec")

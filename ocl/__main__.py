@@ -152,18 +152,38 @@ def namespaces_from_app_interface() -> list[NamespaceV1]:
     ]
 
 
-def auth_url(console_url: str, idp: Optional[str]) -> str:
+def cluster_oauth(console_url: str, hypershift: bool) -> str:
+    if hypershift:
+        apps_suffix = ".".join(console_url.split(".")[3:])
+        return f"oauth.{apps_suffix}"
     apps_suffix = ".".join(console_url.split(".")[1:])
+    return f"oauth-openshift.{apps_suffix}"
+
+
+def token_request_url(console_url: str, idp: str | None, hypershift: bool) -> str:
+    url = cluster_oauth(console_url, hypershift)
+    if hypershift:
+        return f"https://{url}/oauth/token/request"
     if idp:
-        return f"https://oauth-openshift.{apps_suffix}/oauth/authorize?client_id=openshift-browser-client&idp={idp}&redirect_uri=https%3A%2F%2Foauth-openshift.{apps_suffix}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
-    return f"https://oauth-openshift.{apps_suffix}/oauth/token/display"
+        return f"https://{url}/oauth/authorize?client_id=openshift-browser-client&idp={idp}&redirect_uri=https%3A%2F%2F{url}%2Foauth%2Ftoken%2Fdisplay&response_type=code"
+    raise ValueError("idp or hypershift must be set")
+
+
+def token_display_url(console_url: str, hypershift: bool) -> str:
+    url = cluster_oauth(console_url, hypershift)
+    return f"https://{url}/oauth/token/display"
 
 
 def select_idp(console_url: str, idps: list[str]) -> Optional[str]:
     for idp in idps:
-        req = requests.get(auth_url(console_url, idp), allow_redirects=False)
-        if req.status_code != requests.codes["internal_server_error"]:
+        req = requests.get(
+            token_request_url(console_url, idp, hypershift=False), allow_redirects=False
+        )
+        try:
+            req.raise_for_status()
             return idp
+        except requests.exceptions.HTTPError:
+            pass
     return None
 
 
@@ -233,17 +253,24 @@ def oc_setup(
             if not refresh_login and logged_in:
                 return
 
-            if idp := select_idp(cluster.console_url, idps=idps):
+            hypershift = bool(cluster.spec.hypershift) if cluster.spec else False
+            idp = select_idp(cluster.console_url, idps=idps) if not hypershift else None
+            if idp or hypershift:
                 with requests.Session() as session:
                     session.auth = HTTPKerberosAuth(mutual_authentication=OPTIONAL)
-                    r = session.get(auth_url(cluster.console_url, idp))
+                    r = session.get(
+                        token_request_url(cluster.console_url, idp, hypershift)
+                    )
+                    r.raise_for_status()
                     form_data = pq(r.text)("form").serialize_dict()
                     r = session.post(
-                        auth_url(cluster.console_url, idp=None), data=form_data
+                        token_display_url(cluster.console_url, hypershift),
+                        data=form_data,
                     )
+                    r.raise_for_status()
                     token = pq(r.text)("code")[0].text
             else:
-                webbrowser.open(auth_url(cluster.console_url, idp=None))
+                webbrowser.open(cluster.console_url)
                 progress.stop()
                 # manual login
                 token = Prompt.ask("Enter token", password=True)

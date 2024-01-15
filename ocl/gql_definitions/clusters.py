@@ -28,6 +28,9 @@ fragment Cluster on Cluster_v1 {
   auth {
     service
   }
+  spec {
+    hypershift
+  }
 }
 
 query Clusters {
