@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.2
+
+### Features
+
+* ROSA HyperShift cluster support
+
+## 1.0.1
+
+### Bug Fixes
+
+* fix namespace selector for namespaces with the same name on different clusters
+
 ## [1.0.0](https://github.com/chassing/ocl/compare/v0.12.4...v1.0.0) (2024-01-08)
 
 
