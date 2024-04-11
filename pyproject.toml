@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "openshift-cluster-login"
-version = "1.0.2"
+version = "1.0.3"
 description = "Openshift cluster login on command line"
 authors = ["Christian Assing <cassing@redhat.com>"]
 license = "MIT"
