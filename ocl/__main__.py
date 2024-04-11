@@ -128,7 +128,9 @@ def generate_md5_sum(input_string: str) -> str:
 def gql_query(query: str) -> dict[Any, Any]:
     checksum = generate_md5_sum(query)
     if checksum not in cache:
-        headers = {"Authorization": get_var("APP_INT_TOKEN", hidden=True)}
+        headers = {}
+        if token := get_var("APP_INT_TOKEN", hidden=True, default=""):
+            headers["Authorization"] = token
         res = requests.post(
             url=get_var("APP_INTERFACE_URL"),
             json={"query": query},
