@@ -318,10 +318,35 @@ def enable_requests_logging() -> None:
     requests_log.propagate = True
 
 
+def complete_cluster(ctx: typer.Context, incomplete: str) -> Generator[str, None, None]:
+    for cluster in clusters_from_app_interface():
+        if cluster.name.startswith(incomplete):
+            yield cluster.name
+
+
+def complete_project(ctx: typer.Context, incomplete: str) -> Generator[str, None, None]:
+    cluster = ctx.params.get("cluster_name")
+    if not cluster:
+        return
+    for ns in [
+        ns for ns in namespaces_from_app_interface() if ns.cluster.name == cluster
+    ]:
+        if ns.name.startswith(incomplete):
+            yield ns.name
+
+
 @app.command(epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
 def main(  # noqa: PLR0912
-    cluster_name: str = typer.Argument(None, help="Cluster name"),
-    project: str = typer.Argument(None, help="Namespace/Project"),
+    cluster_name: str = typer.Argument(
+        None,
+        help="Cluster name",
+        autocompletion=complete_cluster,
+    ),
+    project: str = typer.Argument(
+        None,
+        help="Namespace/Project",
+        autocompletion=complete_project,
+    ),
     debug: bool = typer.Option(False, help="Enable debug mode"),
     open_in_browser: bool = typer.Option(
         False, help="Open the console in browser instead of local shell"
