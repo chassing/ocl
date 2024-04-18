@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import webbrowser
+from collections.abc import Generator
 from pathlib import Path
 from typing import (
     Any,
@@ -90,7 +91,7 @@ def get_var(var_name: str, default: Any = None, hidden: bool = False) -> str:
     return Prompt.ask(f"Enter OCL_{var_name}", password=hidden)
 
 
-def select_cluster(cluster_name) -> Cluster:
+def select_cluster(cluster_name: str) -> Cluster:
     clusters = clusters_from_app_interface()
     # user defined clusters
     clusters += [
@@ -301,13 +302,13 @@ def blend_text(
     return text
 
 
-def bye():
+def bye() -> None:
     print(
         "Thank you for using openshift-login. :man_bowing: Have a great day ahead! :red_heart-emoji:"
     )
 
 
-def enable_requests_logging():
+def enable_requests_logging() -> None:
     from http.client import HTTPConnection  # noqa: PLC0415
 
     HTTPConnection.debuglevel = 1
@@ -317,10 +318,35 @@ def enable_requests_logging():
     requests_log.propagate = True
 
 
+def complete_cluster(ctx: typer.Context, incomplete: str) -> Generator[str, None, None]:
+    for cluster in clusters_from_app_interface():
+        if cluster.name.startswith(incomplete):
+            yield cluster.name
+
+
+def complete_project(ctx: typer.Context, incomplete: str) -> Generator[str, None, None]:
+    cluster = ctx.params.get("cluster_name")
+    if not cluster:
+        return
+    for ns in [
+        ns for ns in namespaces_from_app_interface() if ns.cluster.name == cluster
+    ]:
+        if ns.name.startswith(incomplete):
+            yield ns.name
+
+
 @app.command(epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
 def main(  # noqa: PLR0912
-    cluster_name: str = typer.Argument(None, help="Cluster name"),
-    project: str = typer.Argument(None, help="Namespace/Project"),
+    cluster_name: str = typer.Argument(
+        None,
+        help="Cluster name",
+        autocompletion=complete_cluster,
+    ),
+    project: str = typer.Argument(
+        None,
+        help="Namespace/Project",
+        autocompletion=complete_project,
+    ),
     debug: bool = typer.Option(False, help="Enable debug mode"),
     open_in_browser: bool = typer.Option(
         False, help="Open the console in browser instead of local shell"
@@ -333,7 +359,7 @@ def main(  # noqa: PLR0912
         ["redhat-app-sre-auth"],
         help="Automatically login via given IDPs (use in given order, try next one if failed). Use 'manual' for manual login.",
     ),
-):
+) -> None:
     logging.basicConfig(
         level=logging.INFO if not debug else logging.DEBUG, format="%(message)s"
     )
@@ -391,7 +417,7 @@ def main(  # noqa: PLR0912
 
     URL: {console_url}
     Cluster: [bold green] {cluster.name}[/]
-    {f'Project: [bold yellow]☸ {project}[/]' if project else ''}"""
+    {f"Project: [bold yellow]☸ {project}[/]" if project else ""}"""
     )
     run(
         os.environ["SHELL"],

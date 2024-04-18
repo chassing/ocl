@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "openshift-cluster-login"
-version = "1.0.3"
+version = "1.0.4"
 description = "Openshift cluster login on command line"
 authors = ["Christian Assing <cassing@redhat.com>"]
 license = "MIT"
@@ -24,7 +24,7 @@ pyquery = "^2.0.0"
 [tool.poetry.group.dev.dependencies]
 types-requests = "^2.28.7"
 pyjwt = "^2.8.0"
-ruff = "^0.1.11"
+ruff = "^0.3.7"
 mypy = "^1.8.0"
 qenerate = "^0.6.3"
 setuptools = "^69.0.3"
@@ -39,7 +39,7 @@ ocl = 'ocl.__main__:app'
 [tool.ruff]
 line-length = 88
 target-version = 'py311'
-required-version = "0.1.11"
+required-version = "0.3.7"
 
 src = ["ocl"]
 extend-exclude = ["ocl/gql_definitions"]
@@ -68,6 +68,18 @@ preview = true
 
 [tool.ruff.lint.isort]
 known-first-party = ["ocl"]
+
+[tool.mypy]
+files = ["ocl"]
+plugins = ["pydantic.mypy"]
+enable_error_code = ["truthy-bool", "redundant-expr"]
+no_implicit_optional = true
+check_untyped_defs = true
+warn_unused_ignores = true
+show_error_codes = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
 
 [[tool.mypy.overrides]]
 # Below are all of the packages that don't implement stub packages. Mypy will throw an error if we don't ignore the
