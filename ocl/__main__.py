@@ -48,7 +48,6 @@ lock_file_name = Path(tempfile.gettempdir()) / "ocl.lock"
 lock = Lock(str(lock_file_name), lifetime=60, default_timeout=65)
 cache = Cache(directory=str(Path(appdirs.user_cache_dir) / "gql_cache"))
 
-ONE_WEEK = 7 * 24 * 60 * 60
 BANNER = """
             ';cloooolc;'            ';clloooolc;'        ':lll:'
           ;d0NWMMMMMMWN0d;        ;d0NWMMMMMMMWN0d;      oNMMMXc
@@ -138,7 +137,11 @@ def gql_query(query: str) -> dict[Any, Any]:
             headers=headers,
         )
         res.raise_for_status()
-        cache.set(checksum, res.json()["data"], expire=ONE_WEEK)
+        cache.set(
+            checksum,
+            res.json()["data"],
+            expire=get_var("CACHE_TIMEOUT_MINUTES", default=60) * 60,
+        )
     return cache[checksum]
 
 
