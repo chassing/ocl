@@ -1,4 +1,5 @@
 ![logo](images/logo-white-bg.png)
+
 # OCL (OpenShift Login)
 
 [![PyPI](https://img.shields.io/pypi/v/openshift-cluster-login)][pypi-link]
@@ -12,26 +13,26 @@ OCL does an automatic login to an OpenShift cluster. It fetches cluster informat
 
 You can install this library from [PyPI][pypi-link] with `pip`:
 
-
 ```shell
-$ python3 -m pip install openshift-cluster-login
+python3 -m pip install openshift-cluster-login
 ```
 
 or install it with `pipx`:
+
 ```shell
-$ pipx install openshift-cluster-login
+pipx install openshift-cluster-login
 ```
 
 You can also use `pipx` to run the library without installing it:
 
 ```shell
-$ pipx run openshift-cluster-login
+pipx run openshift-cluster-login
 ```
 
 ## Usage
 
 ```shell
-$ ocl
+ocl
 ```
 
 <img src="demo/quickstart.gif"/>
@@ -46,13 +47,12 @@ This spawns a new shell with the following environment variables are set:
 
 OCL currently provides the following features (get help with `-h` or `--help`):
 
-- OpenShift console login (`oc login`) via GitHub or Red Hat authentication
-- Get cluster and namespace information from app-interface or user-defined (`OCL_USER_CLUSTERS``)
-_ Open the OpenShift `console in `the `browser`` (`--open-in-browser`)
-- Shell completion (`--install-completion`, `--show-completion`)
-- Credentials via environment variables or shell command (e.g., [1password CLI](https://developer.1password.com/docs/cli/))
-- Cache App-Interface queries (via GraphQL) for one week
-
+* OpenShift console login (`oc login`) via GitHub or Red Hat authentication
+* Get cluster and namespace information from app-interface or user-defined (`OCL_USER_CLUSTERS``)
+_ Open the OpenShift`console in `the`browser`` (`--open-in-browser`)
+* Shell completion (`--install-completion`, `--show-completion`)
+* Credentials via environment variables or shell command (e.g., [1password CLI](https://developer.1password.com/docs/cli/))
+* Cache App-Interface queries (via GraphQL) for one week
 
 ## Environment Variables
 
@@ -60,8 +60,9 @@ _ Open the OpenShift `console in `the `browser`` (`--open-in-browser`)
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | OCL_WAIT OCL_WAIT_COMMAND                           | Selenium webdriver wait timeout                                                                                                             | 2       |
 | OCL_APP_INTERFACE_URL OCL_APP_INTERFACE_URL_COMMAND | App-Interface URL                                                                                                                           |         |
-| OCL_APP_INT_TOKEN OCL_APP_INT_TOKEN_COMMAND         | App-Interface authentication token                                                                                                          |         |
-| USER_CLUSTERS USER_CLUSTERS_COMMAND                 | User defined clusters as json format (e.g. `[{"name": "local-kind", "serverUrl": "https://localhost:6443", "consoleUrl": "not available}]`) | "[]"    |
+| OCL_APP_INT_TOKEN OCL_APP_INT_TOKEN_COMMAND         | App-Interface authentication token [optional]                                                                                               |         |
+| OCL_USER_CLUSTERS OCL_USER_CLUSTERS_COMMAND         | User defined clusters as json format (e.g. `[{"name": "local-kind", "serverUrl": "https://localhost:6443", "consoleUrl": "not available}]`) | "[]"    |
+| OCL_CACHE_TIMEOUT_MINUTES                           | GraphQL cache timeout in minutes                                                                                                            | 1 hour  |
 
 You can either set a variable, e.g. `export OCL_GITHUB_USERNAME="mail@example.com"` or retrieve it via a command, e.g. `export OCL_GITHUB_USERNAME_COMMAND="op read op://Private/Github/username"`.
 If a variable is not set but needed, OCL will ask for it interactively.
@@ -82,7 +83,6 @@ Remove this directory to force a refresh.
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
-
 Use [Conventional Commit messages](https://www.conventionalcommits.org).
 The most important prefixes you should have in mind are:
 
@@ -100,13 +100,10 @@ git commit --allow-empty -m "chore: release"
 ```
 
 When a commit to the main branch has `Release-As: x.x.x` (case insensitive) in the **commit body**, Release Please will open a new pull request for the specified version.
+
 ```
 git commit --allow-empty -m "chore: release 2.0.0" -m "Release-As: 2.0.0"
 ```
 
-
-[github-discussions-badge]: https://img.shields.io/static/v1?label=Discussions&message=Ask&color=blue&logo=github
-[github-discussions-link]:  https://github.com/chassing/ocl/discussions
 [pypi-link]:                https://pypi.org/project/openshift-cluster-login/
 [pypi-platforms]:           https://img.shields.io/pypi/pyversions/openshift-cluster-login
-[pypi-version]:             https://badge.fury.io/py/openshift-cluster-login.svg
