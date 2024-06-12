@@ -24,7 +24,7 @@ pyquery = "^2.0.0"
 [tool.poetry.group.dev.dependencies]
 types-requests = "^2.28.7"
 pyjwt = "^2.8.0"
-ruff = "^0.3.7"
+ruff = "^0.4.8"
 mypy = "^1.8.0"
 qenerate = "^0.6.3"
 setuptools = "^69.0.3"
@@ -39,7 +39,7 @@ ocl = 'ocl.__main__:app'
 [tool.ruff]
 line-length = 88
 target-version = 'py311'
-required-version = "0.3.7"
+required-version = "0.4.8"
 
 src = ["ocl"]
 extend-exclude = ["ocl/gql_definitions"]
@@ -58,6 +58,8 @@ extend-select = [
     "I",
     # pylint
     "PL",
+    # pyupgrade
+    "UP",
 ]
 ignore = [
     "PLR0913", # Too many arguments
@@ -84,5 +86,11 @@ disallow_incomplete_defs = true
 [[tool.mypy.overrides]]
 # Below are all of the packages that don't implement stub packages. Mypy will throw an error if we don't ignore the
 # missing imports. See: https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
-module = ["appdirs.*", "diskcache.*", "pyquery.*", "requests_kerberos.*"]
+module = [
+    "appdirs.*",
+    "diskcache.*",
+    "pyquery.*",
+    "requests_kerberos.*",
+    "iterfzf.*",
+]
 ignore_missing_imports = true
