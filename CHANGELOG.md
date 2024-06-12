@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.6
+
+* New `--command` option to run a single command and exit
+
 ## 1.0.5
 
 * `OCL_CACHE_TIMEOUT_MINUTES` GraphQL cache timeout is now configurable; default is 1 hour
