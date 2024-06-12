@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+* Abandon GitHub releases in favor of PyPI
+* Upgrade dependencies
+
 ## 1.0.6
 
 * New `--command` option to run a single command and exit
