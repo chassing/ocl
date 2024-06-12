@@ -12,12 +12,7 @@ import tempfile
 import webbrowser
 from collections.abc import Generator
 from pathlib import Path
-from typing import (
-    Any,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any
 
 import requests
 import typer
@@ -181,7 +176,7 @@ def token_display_url(console_url: str, hypershift: bool) -> str:
     return f"https://{url}/oauth/token/display"
 
 
-def select_idp(console_url: str, idps: list[str]) -> Optional[str]:
+def select_idp(console_url: str, idps: list[str]) -> str | None:
     for idp in idps:
         req = requests.get(
             token_request_url(console_url, idp, hypershift=False), allow_redirects=False
@@ -204,11 +199,11 @@ def kubeconfig(cluster: Cluster, temp_kube_config: bool) -> str:
 
 
 def run(
-    cmd: Union[list[str], str],
+    cmd: list[str] | str,
     shell: bool = False,
     check: bool = True,
     capture_output: bool = True,
-    cluster: Optional[Cluster] = None,
+    cluster: Cluster | None = None,
     temp_kube_config: bool = False,
 ) -> subprocess.CompletedProcess:
     env = copy.deepcopy(os.environ)
@@ -289,7 +284,7 @@ def oc_setup(
 
 
 def blend_text(
-    message: str, color1: Tuple[int, int, int], color2: Tuple[int, int, int]
+    message: str, color1: tuple[int, int, int], color2: tuple[int, int, int]
 ) -> Text:
     """Blend text from one color to another."""
     text = Text(message)
