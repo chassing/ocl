@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -362,6 +363,10 @@ def main(  # noqa: PLR0912
         ["redhat-app-sre-auth"],
         help="Automatically login via given IDPs (use in given order, try next one if failed). Use 'manual' for manual login.",
     ),
+    command: str = typer.Option(
+        os.environ["SHELL"],
+        help="Run this command instead of spawning a new shell.",
+    ),
 ) -> None:
     logging.basicConfig(
         level=logging.INFO if not debug else logging.DEBUG, format="%(message)s"
@@ -415,20 +420,25 @@ def main(  # noqa: PLR0912
             )
             project = ""
 
+    if command == os.environ["SHELL"]:
+        print("Spawn new shell, use exit or CTRL+d to leave it!")
     print(
-        f"""Spawn new shell, use exit or CTRL+d to leave it!
-
+        f"""
     URL: {console_url}
     Cluster: [bold green] {cluster.name}[/]
     {f"Project: [bold yellow]☸ {project}[/]" if project else ""}"""
     )
-    run(
-        os.environ["SHELL"],
+
+    result = run(
+        shlex.split(command),
         check=False,
         cluster=cluster,
         capture_output=False,
         temp_kube_config=True,
     )
+    if result.returncode != 0:
+        print(f"[bold red]Command failed with exit code {result.returncode}[/]")
+        sys.exit(result.returncode)
     bye()
 
 
