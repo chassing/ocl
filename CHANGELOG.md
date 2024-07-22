@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+* New `--quiet` option to suppress output
+
 ## 1.1.0
 
 * Abandon GitHub releases in favor of PyPI
