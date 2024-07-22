@@ -25,7 +25,7 @@ from requests_kerberos import (
     OPTIONAL,
     HTTPKerberosAuth,
 )
-from rich import print
+from rich import print as rich_print
 from rich.progress import (
     Progress,
     SpinnerColumn,
@@ -81,7 +81,8 @@ def get_var(var_name: str, default: Any = None, hidden: bool = False) -> str:
         return os.environ[env_var]
 
     print(
-        f"[bold red]Missing environment variable [bold green]{env_var}[bold green][/bold red]"
+        f"[bold red]Missing environment variable [bold green]{env_var}[bold green][/bold red]",
+        quiet=False,
     )
     return Prompt.ask(f"Enter OCL_{var_name}", password=hidden)
 
@@ -95,10 +96,11 @@ def select_cluster(cluster_name: str) -> Cluster:
     clusters_dict = {c.name: c for c in clusters}
     if cluster_name not in clusters_dict:
         print(
-            f"[bold red]Cluster [bold green]{cluster_name}[/bold green] not found. Available clusters:[/bold red]"
+            f"[bold red]Cluster [bold green]{cluster_name}[/bold green] not found. Available clusters:[/bold red]",
+            quiet=False,
         )
         for cname in sorted(clusters_dict.keys()):
-            print(f"  [bold green]{cname}[/]")
+            print(f"  [bold green]{cname}[/]", quiet=False)
         sys.exit(1)
     return clusters_dict[cluster_name]
 
@@ -301,9 +303,10 @@ def blend_text(
     return text
 
 
-def bye() -> None:
+def bye(quiet: bool) -> None:
     print(
-        "Thank you for using openshift-login. :man_bowing: Have a great day ahead! :red_heart-emoji:"
+        "Thank you for using openshift-login. :man_bowing: Have a great day ahead! :red_heart-emoji:",
+        quiet=quiet,
     )
 
 
@@ -334,6 +337,12 @@ def complete_project(ctx: typer.Context, incomplete: str) -> Generator[str, None
             yield ns.name
 
 
+def print(msg: str | Text, quiet: bool) -> None:
+    if quiet:
+        return
+    rich_print(msg)
+
+
 @app.command(epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
 def main(  # noqa: PLR0912
     cluster_name: str = typer.Argument(
@@ -351,6 +360,7 @@ def main(  # noqa: PLR0912
         False, help="Open the console in browser instead of local shell"
     ),
     display_banner: bool = typer.Option(True, help="Display shiny OCL banner"),
+    quiet: bool = typer.Option(False, help="Don't print anything"),
     refresh_login: bool = typer.Option(
         False, help="Enforce a new login to refresh the session."
     ),
@@ -369,13 +379,17 @@ def main(  # noqa: PLR0912
     if debug:
         enable_requests_logging()
 
-    if display_banner:
-        print(blend_text(BANNER, (32, 32, 255), (255, 32, 255)))
+    print(
+        blend_text(BANNER, (32, 32, 255), (255, 32, 255)),
+        quiet=not display_banner or quiet,
+    )
 
     if open_in_browser and cluster_name == ".":
         cluster_name = os.environ.get("OCL_CLUSTER_NAME", "")
         if not cluster_name:
-            print("[bold red]environment variable OCL_CLUSTER_NAME not set")
+            print(
+                "[bold red]environment variable OCL_CLUSTER_NAME not set", quiet=quiet
+            )
             sys.exit(1)
         project = run(["oc", "project", "-q"]).stdout.decode("utf-8").strip()
 
@@ -391,9 +405,9 @@ def main(  # noqa: PLR0912
         console_url += f"/k8s/cluster/projects/{project}"
 
     if open_in_browser:
-        print(f"[bold green]Opening [/] {console_url}")
+        print(f"[bold green]Opening [/] {console_url}", quiet=quiet)
         subprocess.run(["open", console_url], check=False)
-        bye()
+        bye(quiet=quiet)
         sys.exit(0)
     try:
         oc_setup(
@@ -403,7 +417,7 @@ def main(  # noqa: PLR0912
             idps=idp,
         )
     except subprocess.CalledProcessError as e:
-        print(f"[bold red]'oc login' failed![/]\nException: {e}")
+        print(f"[bold red]'oc login' failed![/]\nException: {e}", quiet=quiet)
         sys.exit(1)
 
     if project:
@@ -411,17 +425,19 @@ def main(  # noqa: PLR0912
             oc_project(cluster=cluster, project=project)
         except subprocess.CalledProcessError:
             print(
-                f"[bold red]Entering {project} failed! Maybe this project doesn't exist or you don't have proper permissions.[/]"
+                f"[bold red]Entering {project} failed! Maybe this project doesn't exist or you don't have proper permissions.[/]",
+                quiet=quiet,
             )
             project = ""
 
     if command == os.environ["SHELL"]:
-        print("Spawn new shell, use exit or CTRL+d to leave it!")
+        print("Spawn new shell, use exit or CTRL+d to leave it!", quiet=quiet)
     print(
         f"""
     URL: {console_url}
     Cluster: [bold green] {cluster.name}[/]
-    {f"Project: [bold yellow]☸ {project}[/]" if project else ""}"""
+    {f"Project: [bold yellow]☸ {project}[/]" if project else ""}""",
+        quiet=quiet,
     )
 
     result = run(
@@ -432,9 +448,12 @@ def main(  # noqa: PLR0912
         temp_kube_config=True,
     )
     if result.returncode != 0:
-        print(f"[bold red]Command failed with exit code {result.returncode}[/]")
+        print(
+            f"[bold red]Command failed with exit code {result.returncode}[/]",
+            quiet=quiet,
+        )
         sys.exit(result.returncode)
-    bye()
+    bye(quiet=quiet)
 
 
 if __name__ == "__main__":
