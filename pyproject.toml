@@ -1,78 +1,107 @@
-[tool.poetry]
+[project]
 name = "openshift-cluster-login"
-version = "1.1.1"
+version = "1.2.0"
 description = "Openshift cluster login on command line"
-authors = ["Christian Assing <cassing@redhat.com>"]
-license = "MIT"
+authors = [{ name = "Christian Assing", email = "chris@ca-net.org" }]
+license = { text = "MIT License" }
 readme = "README.md"
-repository = "http://github.com/chassing/ocl"
-packages = [{ include = "ocl" }]
+requires-python = ">= 3.11"
+dependencies = [
+    "iterfzf>=1.4.0.54.3",
+    "requests>=2.32.3",
+    "typer>=0.12.5",
+    "rich>=13.7.1",
+    "pydantic>=2.8.2",
+    "flufl-lock>=8.1.0",
+    "diskcache>=5.6.3",
+    "requests-kerberos>=0.15.0",
+    "pyquery>=2.0.0",
+    "appdirs>=1.4.4",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.9,<4.0"
-iterfzf = "^1.1.0.44.0"
-requests = "^2.28.1"
-typer = "^0.6.1"
-rich = "^12.5.1"
-appdirs = "^1.4.4"
-pydantic = "^1.9.2"
-"flufl.lock" = "^7.1.1"
-diskcache = "^5.4.0"
-requests-kerberos = "^0.14.0"
-pyquery = "^2.0.0"
+[project.urls]
+homepage = "http://github.com/chassing/ocl"
+respository = "http://github.com/chassing/ocl"
+issues = "http://github.com/chassing/ocl/issues"
 
-[tool.poetry.group.dev.dependencies]
-types-requests = "^2.28.7"
-pyjwt = "^2.8.0"
-ruff = "^0.4.8"
-mypy = "^1.8.0"
-qenerate = "^0.6.3"
-setuptools = "^69.0.3"
+[tool.uv]
+dev-dependencies = [
+    "types-requests",
+    "pyjwt",
+    "ruff",
+    "mypy",
+    "qenerate",
+    "setuptools>=73.0.1",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry.scripts]
-ocl = 'ocl.__main__:app'
+[project.scripts]
+ocl = 'openshift_cluster_login.__main__:app'
 
 [tool.ruff]
 line-length = 88
 target-version = 'py311'
-required-version = "0.4.8"
-
-src = ["ocl"]
-extend-exclude = ["ocl/gql_definitions"]
+required-version = "0.6.2"
+src = ["openshift_cluster_login"]
+extend-exclude = ["openshift_cluster_login/gql_definitions"]
 fix = true
 
 [tool.ruff.lint]
 preview = true
-
-# defaults are ["E4", "E7", "E9", "F"]
-extend-select = [
-    # flake8 default rules
-    "E1", # preview rule
-    "E2", # preview rule
-    "W",
-    # isort
-    "I",
-    # pylint
-    "PL",
-    # pyupgrade
-    "UP",
-]
+select = ["ALL"]
 ignore = [
+    "ANN401",
+    "ARG001",  # Unused argument
+    "ARG002",  # Unused argument
+    "CPY",     # Missing copyright header
+    "D10",     # Missing docstring in XXX
+    "D203",    # 1 blank line required before class docstring
+    "D211",    # No blank lines allowed before class docstring
+    "D212",    # multi-line-summary-first-line
+    "D213",    # multi-line-summary-second-line
+    "D4",      # Doc string style
+    "E501",    # Line too long
+    "EM",      # error message in exceptions
+    "G004",    # Logging statement uses string formatting
+    "PD",      # no pandas please
+    "PLC0415", # `import` should be at the top-level of a file
+    "PLR0904", # Too many public methods
     "PLR0913", # Too many arguments
     "PLR0917", # Too many positional arguments
+    "PLR6301", # no self-ussage
+    "S101",    # Use of assert detected. Pytest uses assert
+    "S404",    # subprocess import
+    "S602",    # subprocess check
+    "S603",    # subprocess check for execution of untrusted input
+    "S604",    # subprocess shell=True
+    "TRY003",  # Avoid specifying long messages outside the exception class
+    "TRY300",  # try-consider-else
+    # pydoclint
+    "DOC",
+    # May conflict with the formatter, https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+    "D206",
+    "D300",
+    "Q",
+    "COM812",
+    "COM819",
+    "ISC001",
 ]
+
 [tool.ruff.format]
 preview = true
 
 [tool.ruff.lint.isort]
-known-first-party = ["ocl"]
+known-first-party = ["openshift_cluster_login"]
 
 [tool.mypy]
-files = ["ocl"]
+files = ["openshift_cluster_login"]
 plugins = ["pydantic.mypy"]
 enable_error_code = ["truthy-bool", "redundant-expr"]
 no_implicit_optional = true

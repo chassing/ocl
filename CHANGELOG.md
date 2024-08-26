@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0
+
+* Use [uv](https://docs.astral.sh/uv/) package manager
+* Upgrade dependencies
+
 ## 1.1.1
 
 * New `--quiet` option to suppress output

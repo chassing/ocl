@@ -20,7 +20,6 @@ from pydantic import (  # noqa: F401 # pylint: disable=W0611
 
 class ConfiguredBaseModel(BaseModel):
     class Config:
-        smart_union=True
         extra=Extra.forbid
 
 
