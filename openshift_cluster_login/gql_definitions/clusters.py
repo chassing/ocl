@@ -17,7 +17,7 @@ from pydantic import (  # noqa: F401 # pylint: disable=W0611
     Json,
 )
 
-from ocl.gql_definitions.fragments.cluster import Cluster
+from openshift_cluster_login.gql_definitions.fragments.cluster import Cluster
 
 
 DEFINITION = """
@@ -33,13 +33,9 @@ fragment Cluster on Cluster_v1 {
   }
 }
 
-query Namespaces {
-  namespaces: namespaces_v1 {
-    name
-    delete
-    cluster {
-      ... Cluster
-    }
+query Clusters {
+  clusters: clusters_v1 {
+    ... Cluster
   }
 }
 """
@@ -47,21 +43,14 @@ query Namespaces {
 
 class ConfiguredBaseModel(BaseModel):
     class Config:
-        smart_union=True
         extra=Extra.forbid
 
 
-class NamespaceV1(ConfiguredBaseModel):
-    name: str = Field(..., alias="name")
-    delete: Optional[bool] = Field(..., alias="delete")
-    cluster: Cluster = Field(..., alias="cluster")
+class ClustersQueryData(ConfiguredBaseModel):
+    clusters: Optional[list[Cluster]] = Field(..., alias="clusters")
 
 
-class NamespacesQueryData(ConfiguredBaseModel):
-    namespaces: Optional[list[NamespaceV1]] = Field(..., alias="namespaces")
-
-
-def query(query_func: Callable, **kwargs: Any) -> NamespacesQueryData:
+def query(query_func: Callable, **kwargs: Any) -> ClustersQueryData:
     """
     This is a convenience function which queries and parses the data into
     concrete types. It should be compatible with most GQL clients.
@@ -74,7 +63,7 @@ def query(query_func: Callable, **kwargs: Any) -> NamespacesQueryData:
         kwargs: optional arguments that will be passed to the query function
 
     Returns:
-        NamespacesQueryData: queried data parsed into generated classes
+        ClustersQueryData: queried data parsed into generated classes
     """
     raw_data: dict[Any, Any] = query_func(DEFINITION, **kwargs)
-    return NamespacesQueryData(**raw_data)
+    return ClustersQueryData(**raw_data)

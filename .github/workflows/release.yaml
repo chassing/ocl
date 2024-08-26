@@ -10,27 +10,25 @@ jobs:
     name: Build PyPI packages
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Install poetry
-        run: pipx install poetry
+      - name: Set up uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: "poetry"
+          python-version-file: "pyproject.toml"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Build
+        run: uvx --from build pyproject-build --installer uv
 
       - name: Publish to PyPI
         env:
-          POETRY_HTTP_BASIC_PYPI_USERNAME: __token__
-          POETRY_HTTP_BASIC_PYPI_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
-          poetry publish --build --skip-existing
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: pypi-packages
-          path: |
-            dist/*.whl
-            dist/*.tar.gz
+          uvx twine upload --skip-existing dist/*

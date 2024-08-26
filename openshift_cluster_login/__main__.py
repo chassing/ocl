@@ -20,7 +20,7 @@ from appdirs import AppDirs
 from diskcache import Cache
 from flufl.lock import Lock
 from iterfzf import iterfzf
-from pyquery import PyQuery as pq
+from pyquery import PyQuery as pq  # noqa: N813
 from requests_kerberos import (
     OPTIONAL,
     HTTPKerberosAuth,
@@ -34,10 +34,12 @@ from rich.progress import (
 from rich.prompt import Prompt
 from rich.text import Text
 
-from ocl.gql_definitions.clusters import query as clusters_query
-from ocl.gql_definitions.fragments.cluster import Cluster
-from ocl.gql_definitions.namespaces import NamespaceV1
-from ocl.gql_definitions.namespaces import query as namespaces_query
+from openshift_cluster_login.gql_definitions.clusters import query as clusters_query
+from openshift_cluster_login.gql_definitions.fragments.cluster import Cluster
+from openshift_cluster_login.gql_definitions.namespaces import NamespaceV1
+from openshift_cluster_login.gql_definitions.namespaces import (
+    query as namespaces_query,
+)
 
 appdirs = AppDirs("ocl", "ca-net")
 lock_file_name = Path(tempfile.gettempdir()) / "ocl.lock"
@@ -66,7 +68,7 @@ BANNER = """
 app = typer.Typer(rich_markup_mode="rich")
 
 
-def get_var(var_name: str, default: Any = None, hidden: bool = False) -> str:
+def get_var(var_name: str, default: Any = None, *, hidden: bool = False) -> str:
     env_var = f"OCL_{var_name}"
     if cmd := os.getenv(f"{env_var}_COMMAND"):
         return (
@@ -114,17 +116,15 @@ def select_namespace() -> NamespaceV1:
     if not selected_item:
         sys.exit(0)
     ns, cluster = re.split(r"\s+", selected_item)
-    return namespaces_dict[(ns.strip(), cluster.strip())]
+    return namespaces_dict[ns.strip(), cluster.strip()]
 
 
-def generate_md5_sum(input_string: str) -> str:
-    md5_hash = hashlib.md5()
-    md5_hash.update(input_string.encode("utf-8"))
-    return md5_hash.hexdigest()
+def generate_checksum(input_string: str) -> str:
+    return hashlib.sha256(input_string.encode("utf-8")).hexdigest()
 
 
 def gql_query(query: str) -> dict[Any, Any]:
-    checksum = generate_md5_sum(query)
+    checksum = generate_checksum(query)
     if checksum not in cache:
         headers = {}
         if token := get_var("APP_INT_TOKEN", hidden=True, default=""):
@@ -133,6 +133,7 @@ def gql_query(query: str) -> dict[Any, Any]:
             url=get_var("APP_INTERFACE_URL"),
             json={"query": query},
             headers=headers,
+            timeout=10,
         )
         res.raise_for_status()
         cache.set(
@@ -156,7 +157,7 @@ def namespaces_from_app_interface() -> list[NamespaceV1]:
     ]
 
 
-def cluster_oauth(console_url: str, hypershift: bool) -> str:
+def cluster_oauth(console_url: str, *, hypershift: bool) -> str:
     if hypershift:
         apps_suffix = ".".join(console_url.split(".")[3:])
         return f"oauth.{apps_suffix}"
@@ -164,8 +165,8 @@ def cluster_oauth(console_url: str, hypershift: bool) -> str:
     return f"oauth-openshift.{apps_suffix}"
 
 
-def token_request_url(console_url: str, idp: str | None, hypershift: bool) -> str:
-    url = cluster_oauth(console_url, hypershift)
+def token_request_url(console_url: str, idp: str | None, *, hypershift: bool) -> str:
+    url = cluster_oauth(console_url, hypershift=hypershift)
     if hypershift:
         return f"https://{url}/oauth/token/request"
     if idp:
@@ -173,15 +174,17 @@ def token_request_url(console_url: str, idp: str | None, hypershift: bool) -> st
     raise ValueError("idp or hypershift must be set")
 
 
-def token_display_url(console_url: str, hypershift: bool) -> str:
-    url = cluster_oauth(console_url, hypershift)
+def token_display_url(console_url: str, *, hypershift: bool) -> str:
+    url = cluster_oauth(console_url, hypershift=hypershift)
     return f"https://{url}/oauth/token/display"
 
 
 def select_idp(console_url: str, idps: list[str]) -> str | None:
     for idp in idps:
         req = requests.get(
-            token_request_url(console_url, idp, hypershift=False), allow_redirects=False
+            token_request_url(console_url, idp, hypershift=False),
+            allow_redirects=False,
+            timeout=10,
         )
         try:
             req.raise_for_status()
@@ -191,7 +194,7 @@ def select_idp(console_url: str, idps: list[str]) -> str | None:
     return None
 
 
-def kubeconfig(cluster: Cluster, temp_kube_config: bool) -> str:
+def kubeconfig(cluster: Cluster, *, temp_kube_config: bool) -> str:
     kc = f"{Path.home()}/.kube/config_{cluster.name}"
     if temp_kube_config:
         _, temp_file = tempfile.mkstemp(prefix=f"ocl.{cluster.name}.")
@@ -202,6 +205,7 @@ def kubeconfig(cluster: Cluster, temp_kube_config: bool) -> str:
 
 def run(
     cmd: list[str] | str,
+    *,
     shell: bool = False,
     check: bool = True,
     capture_output: bool = True,
@@ -237,9 +241,7 @@ def oc_check_login(cluster: Cluster) -> bool:
         return False
 
 
-def oc_setup(
-    cluster: Cluster, debug: bool, refresh_login: bool, idps: list[str]
-) -> None:
+def oc_setup(cluster: Cluster, idps: list[str], *, refresh_login: bool) -> None:
     with Progress(
         SpinnerColumn(), TextColumn("[progress.description]{task.description}")
     ) as progress:
@@ -263,12 +265,14 @@ def oc_setup(
                 with requests.Session() as session:
                     session.auth = HTTPKerberosAuth(mutual_authentication=OPTIONAL)
                     r = session.get(
-                        token_request_url(cluster.console_url, idp, hypershift)
+                        token_request_url(
+                            cluster.console_url, idp, hypershift=hypershift
+                        )
                     )
                     r.raise_for_status()
                     form_data = pq(r.text)("form").serialize_dict()
                     r = session.post(
-                        token_display_url(cluster.console_url, hypershift),
+                        token_display_url(cluster.console_url, hypershift=hypershift),
                         data=form_data,
                     )
                     r.raise_for_status()
@@ -303,7 +307,7 @@ def blend_text(
     return text
 
 
-def bye(quiet: bool) -> None:
+def bye(*, quiet: bool) -> None:
     print(
         "Thank you for using openshift-login. :man_bowing: Have a great day ahead! :red_heart-emoji:",
         quiet=quiet,
@@ -311,7 +315,7 @@ def bye(quiet: bool) -> None:
 
 
 def enable_requests_logging() -> None:
-    from http.client import HTTPConnection  # noqa: PLC0415
+    from http.client import HTTPConnection
 
     HTTPConnection.debuglevel = 1
     logging.getLogger().setLevel(logging.DEBUG)
@@ -337,14 +341,14 @@ def complete_project(ctx: typer.Context, incomplete: str) -> Generator[str, None
             yield ns.name
 
 
-def print(msg: str | Text, quiet: bool) -> None:
+def print(msg: str | Text, *, quiet: bool) -> None:  # noqa: A001
     if quiet:
         return
     rich_print(msg)
 
 
 @app.command(epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
-def main(  # noqa: PLR0912
+def main(  # noqa: C901
     cluster_name: str = typer.Argument(
         None,
         help="Cluster name",
@@ -355,21 +359,22 @@ def main(  # noqa: PLR0912
         help="Namespace/Project",
         autocompletion=complete_project,
     ),
-    debug: bool = typer.Option(False, help="Enable debug mode"),
+    *,
+    debug: bool = typer.Option(default=False, help="Enable debug mode"),
     open_in_browser: bool = typer.Option(
-        False, help="Open the console in browser instead of local shell"
+        default=False, help="Open the console in browser instead of local shell"
     ),
-    display_banner: bool = typer.Option(True, help="Display shiny OCL banner"),
-    quiet: bool = typer.Option(False, help="Don't print anything"),
+    display_banner: bool = typer.Option(default=True, help="Display shiny OCL banner"),
+    quiet: bool = typer.Option(default=False, help="Don't print anything"),
     refresh_login: bool = typer.Option(
-        False, help="Enforce a new login to refresh the session."
+        default=False, help="Enforce a new login to refresh the session."
     ),
-    idp: list[str] = typer.Option(
-        ["redhat-app-sre-auth"],
+    idp: list[str] = typer.Option(  # noqa: B008
+        default=["redhat-app-sre-auth"],
         help="Automatically login via given IDPs (use in given order, try next one if failed). Use 'manual' for manual login.",
     ),
     command: str = typer.Option(
-        os.environ["SHELL"],
+        default=os.environ["SHELL"],
         help="Run this command instead of spawning a new shell.",
     ),
 ) -> None:
@@ -406,15 +411,14 @@ def main(  # noqa: PLR0912
 
     if open_in_browser:
         print(f"[bold green]Opening [/] {console_url}", quiet=quiet)
-        subprocess.run(["open", console_url], check=False)
+        subprocess.run(["open", console_url], check=False)  # noqa: S607
         bye(quiet=quiet)
         sys.exit(0)
     try:
         oc_setup(
             cluster,
-            debug=debug,
-            refresh_login=refresh_login,
             idps=idp,
+            refresh_login=refresh_login,
         )
     except subprocess.CalledProcessError as e:
         print(f"[bold red]'oc login' failed![/]\nException: {e}", quiet=quiet)
