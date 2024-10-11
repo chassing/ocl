@@ -18,7 +18,21 @@ dependencies = [
     "pyquery>=2.0.0",
     "appdirs>=1.4.4",
 ]
-
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: System Shells",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Terminals :: Terminal Emulators/X Terminals",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 [project.urls]
 homepage = "http://github.com/chassing/ocl"
 respository = "http://github.com/chassing/ocl"
