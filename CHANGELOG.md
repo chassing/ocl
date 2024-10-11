@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+* Upgrade dependencies
+
 ## 1.2.0
 
 * Use [uv](https://docs.astral.sh/uv/) package manager
