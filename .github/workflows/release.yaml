@@ -12,8 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -21,11 +21,10 @@ jobs:
           python-version-file: "pyproject.toml"
 
       - name: Build
-        run: uvx --from build pyproject-build --installer uv
+        run: uv build
 
       - name: Publish to PyPI
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          uvx twine upload --skip-existing dist/*
+          UV_PUBLISH_USERNAME: __token__
+          UV_PUBLISH_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: uv publish
