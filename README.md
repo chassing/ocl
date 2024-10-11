@@ -11,22 +11,22 @@ OCL does an automatic login to an OpenShift cluster. It fetches cluster informat
 
 ## Installation
 
-You can install this library from [PyPI][pypi-link] with `pip`:
+You can install this tool from [PyPI][pypi-link] with `pip`:
 
 ```shell
 python3 -m pip install openshift-cluster-login
 ```
 
-or install it with `pipx`:
+or install it with `uv`:
 
 ```shell
-pipx install openshift-cluster-login
+uv tool install openshift-cluster-login
 ```
 
-You can also use `pipx` to run the library without installing it:
+You can also use `uv` to run the tool without installing it:
 
 ```shell
-pipx run openshift-cluster-login
+uvx run openshift-cluster-login
 ```
 
 ## Usage
