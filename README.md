@@ -26,7 +26,7 @@ uv tool install openshift-cluster-login
 You can also use `uv` to run the tool without installing it:
 
 ```shell
-uvx run openshift-cluster-login
+uvx openshift-cluster-login
 ```
 
 ## Usage
