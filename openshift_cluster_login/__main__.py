@@ -45,6 +45,8 @@ appdirs = AppDirs("ocl", "ca-net")
 lock_file_name = Path(tempfile.gettempdir()) / "ocl.lock"
 lock = Lock(str(lock_file_name), lifetime=60, default_timeout=65)
 cache = Cache(directory=str(Path(appdirs.user_cache_dir) / "gql_cache"))
+history_file = Path(appdirs.user_cache_dir) / "history"
+history_file.touch()
 
 BANNER = """
             ';cloooolc;'            ';clloooolc;'        ':lll:'
@@ -107,15 +109,23 @@ def select_cluster(cluster_name: str) -> Cluster:
     return clusters_dict[cluster_name]
 
 
-def select_namespace() -> NamespaceV1:
+def select_namespace(*, history_enabled: bool) -> NamespaceV1:
     namespaces_dict = {
         (ns.name, ns.cluster.name): ns for ns in namespaces_from_app_interface()
     }
     items = [f"{k[0]:<40} {k[1]}" for k in sorted(namespaces_dict.keys())]
-    selected_item = iterfzf(items, __extra__=[f"--header={'Namespace':<40} Cluster"])
+    last_selected = (
+        history_file.read_text(encoding="utf-8").strip() if history_enabled else ""
+    )
+    selected_item = iterfzf(
+        items,
+        query=last_selected,
+        __extra__=[f"--header={'Namespace':<40} Cluster"],
+    )
     if not selected_item:
         sys.exit(0)
     ns, cluster = re.split(r"\s+", selected_item)
+    history_file.write_text(ns, encoding="utf-8")
     return namespaces_dict[ns.strip(), cluster.strip()]
 
 
@@ -377,6 +387,11 @@ def main(  # noqa: C901
         default=os.environ["SHELL"],
         help="Run this command instead of spawning a new shell.",
     ),
+    history: bool = typer.Option(
+        default=True,
+        envvar="OCL_HISTORY",
+        help="Enable last selected namespace history. This will preselect the last used namespace.",
+    ),
 ) -> None:
     logging.basicConfig(
         level=logging.INFO if not debug else logging.DEBUG, format="%(message)s"
@@ -401,7 +416,7 @@ def main(  # noqa: C901
     if cluster_name:
         cluster = select_cluster(cluster_name)
     else:
-        ns = select_namespace()
+        ns = select_namespace(history_enabled=history)
         cluster = ns.cluster
         project = ns.name
     console_url = cluster.console_url
