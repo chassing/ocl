@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.2
+
+### Features
+
+* `--history/--no-history` option to enable/disable the last selected item history.
+
+### Chore
+
+* Upgrade dependencies
+
 ## 1.2.1
 
 * Upgrade dependencies
