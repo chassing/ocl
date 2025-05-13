@@ -1,6 +1,6 @@
 [project]
 name = "openshift-cluster-login"
-version = "1.2.1"
+version = "1.2.2"
 description = "Openshift cluster login on command line"
 authors = [{ name = "Christian Assing", email = "chris@ca-net.org" }]
 license = { text = "MIT License" }
@@ -61,7 +61,6 @@ only-include = ["openshift_cluster_login"]
 [tool.ruff]
 line-length = 88
 target-version = 'py311'
-required-version = "0.6.9"
 src = ["openshift_cluster_login"]
 extend-exclude = ["openshift_cluster_login/gql_definitions"]
 fix = true
