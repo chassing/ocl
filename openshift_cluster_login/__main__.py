@@ -3,7 +3,6 @@ import hashlib
 import json
 import logging
 import os
-import re
 import shlex
 import shutil
 import subprocess
@@ -19,7 +18,6 @@ import typer
 from appdirs import AppDirs
 from diskcache import Cache
 from flufl.lock import Lock
-from iterfzf import iterfzf
 from pyquery import PyQuery as pq  # noqa: N813
 from requests_kerberos import (
     OPTIONAL,
@@ -41,12 +39,17 @@ from openshift_cluster_login.gql_definitions.namespaces import (
     query as namespaces_query,
 )
 
+from .ui import Namespace
+from .ui import app as ui_app
+
 appdirs = AppDirs("ocl", "ca-net")
 lock_file_name = Path(tempfile.gettempdir()) / "ocl.lock"
 lock = Lock(str(lock_file_name), lifetime=60, default_timeout=65)
 cache = Cache(directory=str(Path(appdirs.user_cache_dir) / "gql_cache"))
 history_file = Path(appdirs.user_cache_dir) / "history"
 history_file.touch()
+star_file = Path(appdirs.user_cache_dir) / "star.json"
+
 
 BANNER = """
             ';cloooolc;'            ';clloooolc;'        ':lll:'
@@ -113,20 +116,32 @@ def select_namespace(*, history_enabled: bool) -> NamespaceV1:
     namespaces_dict = {
         (ns.name, ns.cluster.name): ns for ns in namespaces_from_app_interface()
     }
-    items = [f"{k[0]:<40} {k[1]}" for k in sorted(namespaces_dict.keys())]
-    last_selected = (
+    ui_app.last_selected = (
         history_file.read_text(encoding="utf-8").strip() if history_enabled else ""
     )
-    selected_item = iterfzf(
-        items,
-        query=last_selected,
-        __extra__=[f"--header={'Namespace':<40} Cluster"],
+    stars = (
+        json.loads(star_file.read_text(encoding="utf-8")) if star_file.exists() else []
     )
-    if not selected_item:
+    ui_app.namespaces = [
+        Namespace(
+            namespace=namespace,
+            cluster=cluster,
+            starred=[namespace, cluster] in stars,
+        )
+        for namespace, cluster in namespaces_dict
+    ]
+    ui_app.run()
+    star_file.write_text(
+        json.dumps(
+            [(ns.namespace, ns.cluster) for ns in ui_app.namespaces if ns.starred],
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    if not ui_app.selected_namespace or not ui_app.selected_cluster:
         sys.exit(0)
-    ns, cluster = re.split(r"\s+", selected_item)
-    history_file.write_text(ns, encoding="utf-8")
-    return namespaces_dict[ns.strip(), cluster.strip()]
+    history_file.write_text(ui_app.selected_namespace, encoding="utf-8")
+    return namespaces_dict[ui_app.selected_namespace, ui_app.selected_cluster]
 
 
 def generate_checksum(input_string: str) -> str:

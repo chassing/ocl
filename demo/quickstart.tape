@@ -12,7 +12,7 @@ Type "ocl"
 Sleep 1s
 Enter
 Sleep 3s
-Type@500ms app-sre-stage
+Type@500ms glitchtip
 Sleep 3s
 Enter
 Sleep 5s

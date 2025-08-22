@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0
+
+### Features
+
+* Native UI instead of fzf interface
+
+### Chore
+
+* Upgrade dependencies
+
 ## 1.2.2
 
 ### Features
