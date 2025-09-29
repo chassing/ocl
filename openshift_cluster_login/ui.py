@@ -106,7 +106,7 @@ class NamespaceList(DataTable, Generic[CellType]):
     def on_mount(self) -> None:
         self.star_column = self.add_column(STAR)
         self.namespace_column = self.add_column("Namespace")
-        self.add_column("Cluster")
+        self.cluster_column = self.add_column("Cluster")
         for ns in self.namespaces:
             self.add_row(
                 STAR if ns.starred else NOT_STAR,
@@ -119,12 +119,16 @@ class NamespaceList(DataTable, Generic[CellType]):
         """Watch for changes to the namespace filter."""
         all_data = self._data | self._hidden_data
 
+        def get_searchable_text(row_key):
+            row_data = all_data[row_key]
+            return f"{row_data[self.namespace_column]} {row_data[self.cluster_column]}"
+
         row_keys_to_display = (
             set(
                 fuzzyfinder(
                     self.namespace_filter,
                     all_data.keys(),
-                    accessor=lambda row_key: all_data[row_key][self.namespace_column],
+                    accessor=get_searchable_text,
                     sort_results=False,
                 )
             )
