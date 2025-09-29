@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.1
+
+### Features
+
+* Extend filtering to the cluster column (#56)
+
 ## 1.3.0
 
 ### Features
