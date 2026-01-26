@@ -19,10 +19,7 @@ from appdirs import AppDirs
 from diskcache import Cache
 from flufl.lock import Lock
 from pyquery import PyQuery as pq  # noqa: N813
-from requests_kerberos import (
-    OPTIONAL,
-    HTTPKerberosAuth,
-)
+from requests_gssapi import HTTPKerberosAuth
 from rich import print as rich_print
 from rich.progress import (
     Progress,
@@ -288,7 +285,7 @@ def oc_setup(cluster: Cluster, idps: list[str], *, refresh_login: bool) -> None:
             idp = select_idp(cluster.console_url, idps=idps) if not hypershift else None
             if idp or hypershift:
                 with requests.Session() as session:
-                    session.auth = HTTPKerberosAuth(mutual_authentication=OPTIONAL)
+                    session.auth = HTTPKerberosAuth()
                     r = session.get(
                         token_request_url(
                             cluster.console_url, idp, hypershift=hypershift
