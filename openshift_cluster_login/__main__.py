@@ -43,9 +43,9 @@ appdirs = AppDirs("ocl", "ca-net")
 lock_file_name = Path(tempfile.gettempdir()) / "ocl.lock"
 lock = Lock(str(lock_file_name), lifetime=60, default_timeout=65)
 cache = Cache(directory=str(Path(appdirs.user_cache_dir) / "gql_cache"))
-history_file = Path(appdirs.user_cache_dir) / "history"
+history_file = Path(appdirs.user_config_dir) / "history"
 history_file.touch()
-star_file = Path(appdirs.user_cache_dir) / "star.json"
+star_file = Path(appdirs.user_config_dir) / "star.json"
 
 
 BANNER = """

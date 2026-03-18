@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.1
+
+### Bug Fixes
+
+* Move history and star files to user config directory
+
+## 1.4.0
+
+* Switch to requests_gssapi and update deps
+
+### Chore
+
 ## 1.3.1
 
 ### Features
