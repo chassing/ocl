@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.2
+
+### Bug Fixes
+
+* Create user config directory if it doesn't exist; this fixes issues with the history and star files not being created on some systems
+
 ## 1.4.1
 
 ### Bug Fixes
