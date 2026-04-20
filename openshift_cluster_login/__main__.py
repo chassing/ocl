@@ -1,3 +1,4 @@
+import builtins
 import copy
 import hashlib
 import json
@@ -10,6 +11,7 @@ import sys
 import tempfile
 import webbrowser
 from collections.abc import Generator
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +49,10 @@ user_config_dir = Path(appdirs.user_config_dir)
 user_config_dir.mkdir(parents=True, exist_ok=True)
 history_file = user_config_dir / "history"
 history_file.touch()
+
+EXEC_CREDENTIAL_TTL = 5 * 60  # seconds; how long kubectl caches the token in-memory
+TOKEN_VALIDATION_TTL = 5 * 60  # seconds; how often to re-validate via oc whoami
+
 star_file = user_config_dir / "star.json"
 
 
@@ -378,6 +384,61 @@ def print(msg: str | Text, *, quiet: bool) -> None:  # noqa: A001
     if quiet:
         return
     rich_print(msg)
+
+
+def _find_cluster_by_server(server_url: str) -> Cluster | None:
+    clusters = clusters_from_app_interface()
+    clusters += [Cluster(**c) for c in json.loads(get_var("USER_CLUSTERS", default="[]"))]
+    return next((c for c in clusters if c.server_url == server_url), None)
+
+
+@app.command("get-token")
+def get_token(
+    cluster_name: str | None = typer.Option(
+        default=None,
+        help="Cluster name. Bypasses KUBERNETES_EXEC_INFO; useful for testing.",
+        autocompletion=complete_cluster,
+    ),
+    idp: list[str] = typer.Option(  # noqa: B008
+        default=["redhat-app-sre-auth"],
+        help="Automatically login via given IDPs (use in given order, try next one if failed).",
+    ),
+) -> None:
+    """Output an ExecCredential for use as a kubectl exec credential plugin."""
+    if cluster_name:
+        cluster = select_cluster(cluster_name)
+    else:
+        exec_info_raw = os.environ.get("KUBERNETES_EXEC_INFO")
+        if not exec_info_raw:
+            typer.echo("KUBERNETES_EXEC_INFO not set — pass --cluster or invoke via kubectl", err=True)
+            raise typer.Exit(1)
+
+        server_url = json.loads(exec_info_raw)["spec"]["cluster"]["server"]
+        cluster = _find_cluster_by_server(server_url)
+        if cluster is None:
+            typer.echo(f"No OCL cluster found for server {server_url}", err=True)
+            raise typer.Exit(1)
+
+    cache_key = f"token:{cluster.name}"
+    validated_key = f"token_validated:{cluster.name}"
+
+    token = cache.get(cache_key)
+    recently_validated = cache.get(validated_key)
+
+    if not token or (not recently_validated and not validate_token(cluster, token)):
+        token = fetch_token(cluster, idps=idp)
+        cache.set(cache_key, token)
+
+    cache.set(validated_key, True, expire=TOKEN_VALIDATION_TTL)
+    expiry = datetime.now(tz=UTC) + timedelta(seconds=EXEC_CREDENTIAL_TTL)
+    builtins.print(json.dumps({
+        "apiVersion": "client.authentication.k8s.io/v1beta1",
+        "kind": "ExecCredential",
+        "status": {
+            "token": token,
+            "expirationTimestamp": expiry.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        },
+    }))
 
 
 @app.command("login", epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
