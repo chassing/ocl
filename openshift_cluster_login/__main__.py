@@ -467,7 +467,79 @@ def main(  # noqa: C901
         envvar="OCL_HISTORY",
         help="Enable last selected namespace history. This will preselect the last used namespace.",
     ),
+    get_token: bool = typer.Option(
+        default=False,
+        is_flag=True,
+        help="Output an ExecCredential for use as a kubectl exec credential plugin.",
+    ),
+    import_cluster: str | None = typer.Option(
+        default=None,
+        metavar="CLUSTER",
+        help="Add a cluster to ~/.kube/config as an exec credential plugin entry.",
+    ),
+    import_clusters: bool = typer.Option(
+        default=False,
+        is_flag=True,
+        help="Add all clusters to ~/.kube/config as exec credential plugin entries.",
+    ),
+    overwrite: bool = typer.Option(
+        default=False,
+        is_flag=True,
+        help="Overwrite existing kubeconfig entries (used with --import-cluster/--import-clusters).",
+    ),
 ) -> None:
+    if get_token:
+        if cluster_name:
+            cluster = select_cluster(cluster_name)
+        else:
+            exec_info_raw = os.environ.get("KUBERNETES_EXEC_INFO")
+            if not exec_info_raw:
+                typer.echo("KUBERNETES_EXEC_INFO not set — pass cluster_name or invoke via kubectl", err=True)
+                raise typer.Exit(1)
+            server_url = json.loads(exec_info_raw)["spec"]["cluster"]["server"]
+            cluster = _find_cluster_by_server(server_url)
+            if cluster is None:
+                typer.echo(f"No OCL cluster found for server {server_url}", err=True)
+                raise typer.Exit(1)
+        cache_key = f"token:{cluster.name}"
+        validated_key = f"token_validated:{cluster.name}"
+        token = cache.get(cache_key)
+        recently_validated = cache.get(validated_key)
+        if not token or (not recently_validated and not validate_token(cluster, token)):
+            token = fetch_token(cluster, idps=idp)
+            cache.set(cache_key, token)
+        cache.set(validated_key, True, expire=TOKEN_VALIDATION_TTL)
+        expiry = datetime.now(tz=UTC) + timedelta(seconds=EXEC_CREDENTIAL_TTL)
+        builtins.print(json.dumps({
+            "apiVersion": "client.authentication.k8s.io/v1beta1",
+            "kind": "ExecCredential",
+            "status": {
+                "token": token,
+                "expirationTimestamp": expiry.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            },
+        }))
+        return
+
+    if import_cluster is not None:
+        cluster = select_cluster(import_cluster)
+        if not overwrite and _cluster_in_kubeconfig(cluster.name):
+            rich_print(f"[yellow]skipping {cluster.name}, already exists[/]")
+            return
+        _write_exec_credential_entry(cluster)
+        rich_print(f"imported [bold green]{cluster.name}[/] ({cluster.server_url})")
+        return
+
+    if import_clusters:
+        clusters = clusters_from_app_interface()
+        clusters += [Cluster(**c) for c in json.loads(get_var("USER_CLUSTERS", default="[]"))]
+        for cluster in sorted(clusters, key=lambda c: c.name):
+            if not overwrite and _cluster_in_kubeconfig(cluster.name):
+                rich_print(f"[yellow]skipping {cluster.name}, already exists[/]")
+                continue
+            _write_exec_credential_entry(cluster)
+            rich_print(f"added [bold green]{cluster.name}[/] ({cluster.server_url})")
+        return
+
     logging.basicConfig(
         level=logging.INFO if not debug else logging.DEBUG, format="%(message)s"
     )
