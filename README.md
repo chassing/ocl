@@ -31,25 +31,52 @@ uvx openshift-cluster-login
 
 ## Usage
 
+### Interactive login
+
 ```shell
-ocl
+ocl login
 ```
 
 <img src="demo/quickstart.gif"/>
 
-This spawns a new shell with the following environment variables are set:
+This spawns a new shell with the following environment variables set:
 
 * `KUBECONFIG` - path to kubeconfig file
 * `OCL_CLUSTER_NAME` - cluster name
 * `OCL_CLUSTER_CONSOLE` - url to cluster console
 
+### kubectl exec credential plugin
+
+OCL can act as a [kubectl exec credential plugin](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins), allowing `kubectl` to transparently fetch and refresh credentials without a separate login step.
+
+**One-time setup:**
+
+```shell
+ocl import-cluster <cluster>
+```
+
+This adds the cluster to `~/.kube/config` and creates a shared `ocl` user entry (if not already present) that all imported contexts reference. After that, any `kubectl` command against the cluster works directly — OCL handles authentication in the background.
+
+To import all clusters at once:
+
+```shell
+ocl import-clusters
+```
+
+**How it works:**
+
+`kubectl` calls `ocl get-token` whenever it needs credentials. OCL reads the cluster's server URL from the `KUBERNETES_EXEC_INFO` environment variable that kubectl sets, looks up the matching cluster, checks its token cache, validates via `oc whoami` if needed, re-authenticates if expired, and returns an `ExecCredential` JSON. Tokens are cached and revalidated at most once every 5 minutes to avoid per-command overhead.
+
+Because all imported contexts share a single `ocl` user entry, running `ocl import-clusters` is a true one-time setup — no per-cluster credential configuration required.
+
 ## Features
 
-OCL currently provides the following features (get help with `-h` or `--help`):
+OCL currently provides the following features (get help with `--help`):
 
 * OpenShift console login (`oc login`) via GitHub or Red Hat authentication
+* kubectl exec credential plugin (`get-token`, `import-cluster`, `import-clusters`)
 * Get cluster and namespace information from app-interface or user-defined (`OCL_USER_CLUSTERS`)
-* Open the OpenShift console in  the browser (`--open-in-browser`)
+* Open the OpenShift console in the browser (`--open-in-browser`)
 * Star your most often used namespaces `Ctrl+S` in the UI
 * Shell completion (`--install-completion`, `--show-completion`)
 * Credentials via environment variables or shell command (e.g., [1password CLI](https://developer.1password.com/docs/cli/))

@@ -8,7 +8,7 @@ Type "# Let's run ocl in interactive mode"
 Sleep 1s
 Enter
 
-Type "ocl"
+Type "ocl login"
 Sleep 1s
 Enter
 Sleep 3s
