@@ -386,10 +386,81 @@ def print(msg: str | Text, *, quiet: bool) -> None:  # noqa: A001
     rich_print(msg)
 
 
+def _cluster_in_kubeconfig(cluster_name: str) -> bool:
+    result = subprocess.run(
+        ["kubectl", "config", "get-clusters"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return False
+    return cluster_name in result.stdout.strip().splitlines()[1:]
+
+
+def _write_exec_credential_entry(cluster: Cluster) -> None:
+    subprocess.run(
+        ["kubectl", "config", "set-cluster", cluster.name, f"--server={cluster.server_url}"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        [
+            "kubectl", "config", "set-credentials", "ocl",
+            "--exec-api-version=client.authentication.k8s.io/v1beta1",
+            "--exec-command=ocl",
+            "--exec-arg=get-token",
+            "--exec-interactive-mode=IfAvailable",
+            "--exec-provide-cluster-info=true",
+        ],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        [
+            "kubectl", "config", "set-context", cluster.name,
+            f"--cluster={cluster.name}",
+            "--user=ocl",
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+
 def _find_cluster_by_server(server_url: str) -> Cluster | None:
     clusters = clusters_from_app_interface()
     clusters += [Cluster(**c) for c in json.loads(get_var("USER_CLUSTERS", default="[]"))]
     return next((c for c in clusters if c.server_url == server_url), None)
+
+@app.command("import-cluster")
+def import_cluster(
+    cluster_name: str = typer.Argument(..., help="Cluster name", autocompletion=complete_cluster),
+    *,
+    overwrite: bool = typer.Option(default=False, help="Overwrite existing kubeconfig entry."),
+) -> None:
+    """Add a cluster to ~/.kube/config as an exec credential plugin entry."""
+    cluster = select_cluster(cluster_name)
+    if not overwrite and _cluster_in_kubeconfig(cluster.name):
+        rich_print(f"[yellow]warning: skipping {cluster.name}, already exists[/]")
+        return
+    _write_exec_credential_entry(cluster)
+    rich_print(f"imported [bold green]{cluster.name}[/] ({cluster.server_url})")
+
+
+@app.command("import-clusters")
+def import_clusters(
+    *,
+    overwrite: bool = typer.Option(default=False, help="Overwrite existing kubeconfig entries."),
+) -> None:
+    """Add all clusters to ~/.kube/config as exec credential plugin entries."""
+    clusters = clusters_from_app_interface()
+    clusters += [Cluster(**c) for c in json.loads(get_var("USER_CLUSTERS", default="[]"))]
+    for cluster in sorted(clusters, key=lambda c: c.name):
+        if not overwrite and _cluster_in_kubeconfig(cluster.name):
+            rich_print(f"[yellow]warning: skipping {cluster.name}, already exists[/]")
+            continue
+        _write_exec_credential_entry(cluster)
+        rich_print(f"added [bold green]{cluster.name}[/] ({cluster.server_url})")
+
 
 
 @app.command("get-token")
