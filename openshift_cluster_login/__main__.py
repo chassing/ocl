@@ -69,7 +69,7 @@ BANNER = """
              ;cloooolc;              ;clloooolc;         oKXKKKXXKKKKKd'
 """
 
-app = typer.Typer(rich_markup_mode="rich")
+app = typer.Typer(rich_markup_mode="rich", no_args_is_help=True)
 
 
 def get_var(var_name: str, default: Any = None, *, hidden: bool = False) -> str:
@@ -380,8 +380,8 @@ def print(msg: str | Text, *, quiet: bool) -> None:  # noqa: A001
     rich_print(msg)
 
 
-@app.command(epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
-def main(  # noqa: C901
+@app.command("login", epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
+def login(  # noqa: C901
     cluster_name: str = typer.Argument(
         None,
         help="Cluster name",
@@ -416,6 +416,7 @@ def main(  # noqa: C901
         help="Enable last selected namespace history. This will preselect the last used namespace.",
     ),
 ) -> None:
+    """Login to an OpenShift cluster and spawn a new shell with KUBECONFIG set."""
     logging.basicConfig(
         level=logging.INFO if not debug else logging.DEBUG, format="%(message)s"
     )

@@ -1,6 +1,6 @@
 [project]
 name = "openshift-cluster-login"
-version = "1.4.2"
+version = "2.0.0"
 description = "Openshift cluster login on command line"
 authors = [{ name = "Christian Assing", email = "chris@ca-net.org" }]
 license = { text = "MIT License" }
