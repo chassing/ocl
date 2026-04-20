@@ -265,6 +265,18 @@ def oc_check_login(cluster: Cluster) -> bool:
         return False
 
 
+def validate_token(cluster: Cluster, token: str) -> bool:
+    try:
+        subprocess.run(
+            ["oc", "whoami", f"--token={token}", f"--server={cluster.server_url}"],
+            check=True,
+            capture_output=True,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
 def fetch_token(cluster: Cluster, idps: list[str]) -> str:
     hypershift = bool(cluster.spec.hypershift) if cluster.spec else False
     idp = select_idp(cluster.console_url, idps=idps) if not hypershift else None
