@@ -265,6 +265,40 @@ def oc_check_login(cluster: Cluster) -> bool:
         return False
 
 
+def validate_token(cluster: Cluster, token: str) -> bool:
+    try:
+        subprocess.run(
+            ["oc", "whoami", f"--token={token}", f"--server={cluster.server_url}"],
+            check=True,
+            capture_output=True,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def fetch_token(cluster: Cluster, idps: list[str]) -> str:
+    hypershift = bool(cluster.spec.hypershift) if cluster.spec else False
+    idp = select_idp(cluster.console_url, idps=idps) if not hypershift else None
+    if idp or hypershift:
+        with requests.Session() as session:
+            session.auth = HTTPKerberosAuth()
+            r = session.get(
+                token_request_url(cluster.console_url, idp, hypershift=hypershift)
+            )
+            r.raise_for_status()
+            form_data = pq(r.text)("form").serialize_dict()
+            r = session.post(
+                token_display_url(cluster.console_url, hypershift=hypershift),
+                data=form_data,
+            )
+            r.raise_for_status()
+            return pq(r.text)("code")[0].text
+    else:
+        webbrowser.open(cluster.console_url)
+        return Prompt.ask("Enter token", password=True)
+
+
 def oc_setup(cluster: Cluster, idps: list[str], *, refresh_login: bool) -> None:
     with Progress(
         SpinnerColumn(), TextColumn("[progress.description]{task.description}")
@@ -283,33 +317,8 @@ def oc_setup(cluster: Cluster, idps: list[str], *, refresh_login: bool) -> None:
             if not refresh_login and logged_in:
                 return
 
-            hypershift = bool(cluster.spec.hypershift) if cluster.spec else False
-            idp = select_idp(cluster.console_url, idps=idps) if not hypershift else None
-            if idp or hypershift:
-                with requests.Session() as session:
-                    session.auth = HTTPKerberosAuth()
-                    r = session.get(
-                        token_request_url(
-                            cluster.console_url, idp, hypershift=hypershift
-                        )
-                    )
-                    r.raise_for_status()
-                    form_data = pq(r.text)("form").serialize_dict()
-                    r = session.post(
-                        token_display_url(cluster.console_url, hypershift=hypershift),
-                        data=form_data,
-                    )
-                    r.raise_for_status()
-                    token = pq(r.text)("code")[0].text
-            else:
-                webbrowser.open(cluster.console_url)
-                progress.stop()
-                # manual login
-                token = Prompt.ask("Enter token", password=True)
-                progress.start()
-
             task = progress.add_task(description="CLI login ...", total=1)
-            oc_login(cluster=cluster, token=token)
+            oc_login(cluster=cluster, token=fetch_token(cluster, idps=idps))
             progress.remove_task(task)
 
 
