@@ -1,3 +1,4 @@
+import builtins
 import copy
 import hashlib
 import json
@@ -10,6 +11,7 @@ import sys
 import tempfile
 import webbrowser
 from collections.abc import Generator
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +49,10 @@ user_config_dir = Path(appdirs.user_config_dir)
 user_config_dir.mkdir(parents=True, exist_ok=True)
 history_file = user_config_dir / "history"
 history_file.touch()
+
+EXEC_CREDENTIAL_TTL = 5 * 60  # seconds; how long kubectl caches the token in-memory
+TOKEN_VALIDATION_TTL = 5 * 60  # seconds; how often to re-validate via oc whoami
+
 star_file = user_config_dir / "star.json"
 
 
@@ -378,6 +384,52 @@ def print(msg: str | Text, *, quiet: bool) -> None:  # noqa: A001
     if quiet:
         return
     rich_print(msg)
+
+
+def _find_cluster_by_server(server_url: str) -> Cluster | None:
+    clusters = clusters_from_app_interface()
+    clusters += [Cluster(**c) for c in json.loads(get_var("USER_CLUSTERS", default="[]"))]
+    return next((c for c in clusters if c.server_url == server_url), None)
+
+
+def _cluster_in_kubeconfig(cluster_name: str) -> bool:
+    result = subprocess.run(
+        ["kubectl", "config", "get-clusters"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return False
+    return cluster_name in result.stdout.strip().splitlines()[1:]
+
+
+def _write_exec_credential_entry(cluster: Cluster) -> None:
+    subprocess.run(
+        ["kubectl", "config", "set-cluster", cluster.name, f"--server={cluster.server_url}"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        [
+            "kubectl", "config", "set-credentials", "ocl",
+            "--exec-api-version=client.authentication.k8s.io/v1beta1",
+            "--exec-command=ocl",
+            "--exec-arg=--get-token",
+            "--exec-interactive-mode=IfAvailable",
+            "--exec-provide-cluster-info=true",
+        ],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        [
+            "kubectl", "config", "set-context", cluster.name,
+            f"--cluster={cluster.name}",
+            "--user=ocl",
+        ],
+        check=True,
+        capture_output=True,
+    )
 
 
 @app.command(epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
