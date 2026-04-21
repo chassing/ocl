@@ -1,3 +1,4 @@
+import builtins
 import copy
 import hashlib
 import json
@@ -10,6 +11,7 @@ import sys
 import tempfile
 import webbrowser
 from collections.abc import Generator
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +49,10 @@ user_config_dir = Path(appdirs.user_config_dir)
 user_config_dir.mkdir(parents=True, exist_ok=True)
 history_file = user_config_dir / "history"
 history_file.touch()
+
+EXEC_CREDENTIAL_TTL = 5 * 60  # seconds; how long kubectl caches the token in-memory
+TOKEN_VALIDATION_TTL = 5 * 60  # seconds; how often to re-validate via oc whoami
+
 star_file = user_config_dir / "star.json"
 
 
@@ -265,6 +271,40 @@ def oc_check_login(cluster: Cluster) -> bool:
         return False
 
 
+def validate_token(cluster: Cluster, token: str) -> bool:
+    try:
+        subprocess.run(
+            ["oc", "whoami", f"--token={token}", f"--server={cluster.server_url}"],
+            check=True,
+            capture_output=True,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def fetch_token(cluster: Cluster, idps: list[str]) -> str:
+    hypershift = bool(cluster.spec.hypershift) if cluster.spec else False
+    idp = select_idp(cluster.console_url, idps=idps) if not hypershift else None
+    if idp or hypershift:
+        with requests.Session() as session:
+            session.auth = HTTPKerberosAuth()
+            r = session.get(
+                token_request_url(cluster.console_url, idp, hypershift=hypershift)
+            )
+            r.raise_for_status()
+            form_data = pq(r.text)("form").serialize_dict()
+            r = session.post(
+                token_display_url(cluster.console_url, hypershift=hypershift),
+                data=form_data,
+            )
+            r.raise_for_status()
+            return pq(r.text)("code")[0].text
+    else:
+        webbrowser.open(cluster.console_url)
+        return Prompt.ask("Enter token", password=True)
+
+
 def oc_setup(cluster: Cluster, idps: list[str], *, refresh_login: bool) -> None:
     with Progress(
         SpinnerColumn(), TextColumn("[progress.description]{task.description}")
@@ -283,33 +323,8 @@ def oc_setup(cluster: Cluster, idps: list[str], *, refresh_login: bool) -> None:
             if not refresh_login and logged_in:
                 return
 
-            hypershift = bool(cluster.spec.hypershift) if cluster.spec else False
-            idp = select_idp(cluster.console_url, idps=idps) if not hypershift else None
-            if idp or hypershift:
-                with requests.Session() as session:
-                    session.auth = HTTPKerberosAuth()
-                    r = session.get(
-                        token_request_url(
-                            cluster.console_url, idp, hypershift=hypershift
-                        )
-                    )
-                    r.raise_for_status()
-                    form_data = pq(r.text)("form").serialize_dict()
-                    r = session.post(
-                        token_display_url(cluster.console_url, hypershift=hypershift),
-                        data=form_data,
-                    )
-                    r.raise_for_status()
-                    token = pq(r.text)("code")[0].text
-            else:
-                webbrowser.open(cluster.console_url)
-                progress.stop()
-                # manual login
-                token = Prompt.ask("Enter token", password=True)
-                progress.start()
-
             task = progress.add_task(description="CLI login ...", total=1)
-            oc_login(cluster=cluster, token=token)
+            oc_login(cluster=cluster, token=fetch_token(cluster, idps=idps))
             progress.remove_task(task)
 
 
@@ -371,6 +386,52 @@ def print(msg: str | Text, *, quiet: bool) -> None:  # noqa: A001
     rich_print(msg)
 
 
+def _find_cluster_by_server(server_url: str) -> Cluster | None:
+    clusters = clusters_from_app_interface()
+    clusters += [Cluster(**c) for c in json.loads(get_var("USER_CLUSTERS", default="[]"))]
+    return next((c for c in clusters if c.server_url == server_url), None)
+
+
+def _cluster_in_kubeconfig(cluster_name: str) -> bool:
+    result = subprocess.run(
+        ["kubectl", "config", "get-clusters"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return False
+    return cluster_name in result.stdout.strip().splitlines()[1:]
+
+
+def _write_exec_credential_entry(cluster: Cluster) -> None:
+    subprocess.run(
+        ["kubectl", "config", "set-cluster", cluster.name, f"--server={cluster.server_url}"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        [
+            "kubectl", "config", "set-credentials", "ocl",
+            "--exec-api-version=client.authentication.k8s.io/v1beta1",
+            "--exec-command=ocl",
+            "--exec-arg=--get-token",
+            "--exec-interactive-mode=IfAvailable",
+            "--exec-provide-cluster-info=true",
+        ],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        [
+            "kubectl", "config", "set-context", cluster.name,
+            f"--cluster={cluster.name}",
+            "--user=ocl",
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+
 @app.command(epilog="Made with :heart: by [blue]https://github.com/chassing[/]")
 def main(  # noqa: C901
     cluster_name: str = typer.Argument(
@@ -406,7 +467,79 @@ def main(  # noqa: C901
         envvar="OCL_HISTORY",
         help="Enable last selected namespace history. This will preselect the last used namespace.",
     ),
+    get_token: bool = typer.Option(
+        default=False,
+        is_flag=True,
+        help="Output an ExecCredential for use as a kubectl exec credential plugin.",
+    ),
+    import_cluster: str | None = typer.Option(
+        default=None,
+        metavar="CLUSTER",
+        help="Add a cluster to ~/.kube/config as an exec credential plugin entry.",
+    ),
+    import_clusters: bool = typer.Option(
+        default=False,
+        is_flag=True,
+        help="Add all clusters to ~/.kube/config as exec credential plugin entries.",
+    ),
+    overwrite: bool = typer.Option(
+        default=False,
+        is_flag=True,
+        help="Overwrite existing kubeconfig entries (used with --import-cluster/--import-clusters).",
+    ),
 ) -> None:
+    if get_token:
+        if cluster_name:
+            cluster = select_cluster(cluster_name)
+        else:
+            exec_info_raw = os.environ.get("KUBERNETES_EXEC_INFO")
+            if not exec_info_raw:
+                typer.echo("KUBERNETES_EXEC_INFO not set — pass cluster_name or invoke via kubectl", err=True)
+                raise typer.Exit(1)
+            server_url = json.loads(exec_info_raw)["spec"]["cluster"]["server"]
+            cluster = _find_cluster_by_server(server_url)
+            if cluster is None:
+                typer.echo(f"No OCL cluster found for server {server_url}", err=True)
+                raise typer.Exit(1)
+        cache_key = f"token:{cluster.name}"
+        validated_key = f"token_validated:{cluster.name}"
+        token = cache.get(cache_key)
+        recently_validated = cache.get(validated_key)
+        if not token or (not recently_validated and not validate_token(cluster, token)):
+            token = fetch_token(cluster, idps=idp)
+            cache.set(cache_key, token)
+        cache.set(validated_key, True, expire=TOKEN_VALIDATION_TTL)
+        expiry = datetime.now(tz=UTC) + timedelta(seconds=EXEC_CREDENTIAL_TTL)
+        builtins.print(json.dumps({
+            "apiVersion": "client.authentication.k8s.io/v1beta1",
+            "kind": "ExecCredential",
+            "status": {
+                "token": token,
+                "expirationTimestamp": expiry.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            },
+        }))
+        return
+
+    if import_cluster is not None:
+        cluster = select_cluster(import_cluster)
+        if not overwrite and _cluster_in_kubeconfig(cluster.name):
+            rich_print(f"[yellow]skipping {cluster.name}, already exists[/]")
+            return
+        _write_exec_credential_entry(cluster)
+        rich_print(f"imported [bold green]{cluster.name}[/] ({cluster.server_url})")
+        return
+
+    if import_clusters:
+        clusters = clusters_from_app_interface()
+        clusters += [Cluster(**c) for c in json.loads(get_var("USER_CLUSTERS", default="[]"))]
+        for cluster in sorted(clusters, key=lambda c: c.name):
+            if not overwrite and _cluster_in_kubeconfig(cluster.name):
+                rich_print(f"[yellow]skipping {cluster.name}, already exists[/]")
+                continue
+            _write_exec_credential_entry(cluster)
+            rich_print(f"added [bold green]{cluster.name}[/] ({cluster.server_url})")
+        return
+
     logging.basicConfig(
         level=logging.INFO if not debug else logging.DEBUG, format="%(message)s"
     )
