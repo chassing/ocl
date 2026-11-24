@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -283,6 +284,24 @@ def validate_token(cluster: Cluster, token: str) -> bool:
         return False
 
 
+def extract_token(html: str) -> str:
+    # older OpenShift versions render the token in a <code> element
+    codes = pq(html)("code")
+    if codes:
+        return codes[0].text
+    # newer OpenShift versions render the token via JavaScript into
+    # <pre id="token">; the token only appears in the script block:
+    #   codeSnippet(document.getElementById('token'), [
+    #     'sha256~...',
+    #   ]);
+    m = re.search(
+        r"getElementById\(['\"]token['\"]\)\s*,\s*\[\s*'([^']+)'", html, re.DOTALL
+    )
+    if m:
+        return m.group(1)
+    raise RuntimeError("Unable to find token on token display page")
+
+
 def fetch_token(cluster: Cluster, idps: list[str]) -> str:
     hypershift = bool(cluster.spec.hypershift) if cluster.spec else False
     idp = select_idp(cluster.console_url, idps=idps) if not hypershift else None
@@ -299,7 +318,7 @@ def fetch_token(cluster: Cluster, idps: list[str]) -> str:
                 data=form_data,
             )
             r.raise_for_status()
-            return pq(r.text)("code")[0].text
+            return extract_token(r.text)
     else:
         webbrowser.open(cluster.console_url)
         return Prompt.ask("Enter token", password=True)
